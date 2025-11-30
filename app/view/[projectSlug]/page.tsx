@@ -55,9 +55,11 @@ export default async function ViewProjectPage({
   const initialStepIndex = stepIndex ? parseInt(stepIndex, 10) : 0;
 
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col overflow-hidden">
       <Navbar />
-      <Viewer steps={typedSteps} initialStepIndex={initialStepIndex} />
+      <div className="flex-1 min-h-0">
+        <Viewer steps={typedSteps} initialStepIndex={initialStepIndex} />
+      </div>
     </div>
   );
 }

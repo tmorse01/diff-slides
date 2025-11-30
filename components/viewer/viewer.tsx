@@ -60,8 +60,8 @@ export function Viewer({ steps, initialStepIndex = 0 }: ViewerProps) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="bg-card border border-border rounded-lg overflow-hidden shadow-2xl h-[800px] flex flex-col">
+    <div className="max-w-6xl mx-auto px-4 py-4 h-full flex flex-col">
+      <div className="bg-card border border-border rounded-lg overflow-hidden shadow-2xl flex-1 min-h-0 flex flex-col">
         <div className="flex-1 min-h-0">
           <DiffView
             previousCode={previousStep?.code || ""}
@@ -72,7 +72,7 @@ export function Viewer({ steps, initialStepIndex = 0 }: ViewerProps) {
         </div>
 
         {/* Step navigation at the bottom */}
-        <div className="bg-secondary border-t border-border px-6 py-4 flex items-center justify-between flex-shrink-0">
+        <div className="bg-secondary border-t border-border px-6 py-4 flex items-center justify-between shrink-0">
           <Button
             onClick={handlePrevious}
             disabled={currentStepIndex === 0}

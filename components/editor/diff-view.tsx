@@ -16,6 +16,8 @@ interface DiffViewProps {
 const languageMap: Record<string, string> = {
   javascript: "javascript",
   typescript: "typescript",
+  tsx: "tsx",
+  jsx: "tsx",
   python: "python",
   html: "html",
   css: "css",
@@ -118,7 +120,16 @@ export function DiffView({
           <div className="w-3 h-3 rounded-full bg-accent" />
         </div>
         <div className="text-sm font-mono text-muted-foreground">
-          {fileName || `${language}.${language === "typescript" ? "tsx" : language === "javascript" ? "jsx" : language}`}
+          {fileName ||
+            (() => {
+              const ext =
+                language === "tsx" || language === "typescript"
+                  ? "tsx"
+                  : language === "jsx" || language === "javascript"
+                  ? "jsx"
+                  : language;
+              return `component.${ext}`;
+            })()}
         </div>
         <div className="w-20" /> {/* Spacer for balance */}
       </div>
