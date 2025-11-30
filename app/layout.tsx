@@ -19,6 +19,18 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.svg",
   },
+  openGraph: {
+    title: "DiffSlides - Explain code by highlighting how it changes",
+    description: "Create slideshow-style tutorials from code changes",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "DiffSlides - Code diff viewer showing step-by-step code changes",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
