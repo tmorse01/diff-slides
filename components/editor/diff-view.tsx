@@ -8,6 +8,8 @@ interface DiffViewProps {
   previousCode: string;
   currentCode: string;
   language: string;
+  stepTitle?: string;
+  fileName?: string;
 }
 
 // Map language names to shiki language IDs
@@ -24,6 +26,8 @@ export function DiffView({
   previousCode,
   currentCode,
   language,
+  stepTitle,
+  fileName,
 }: DiffViewProps) {
   const diff = useMemo(
     () => computeDiff(previousCode || "", currentCode || ""),
@@ -105,56 +109,79 @@ export function DiffView({
   }, [diff.lines, shikiLang]);
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden bg-background relative">
-      {/* Line numbers gutter */}
-      <div className="absolute left-0 top-0 bottom-0 w-12 bg-muted/30 border-r border-border z-10 flex flex-col pointer-events-none">
-        {diff.lines.map((line, index) => (
-          <div
-            key={index}
-            className="flex items-center justify-end px-2 py-0 text-xs text-muted-foreground font-mono"
-            style={{ minHeight: "1.5rem", lineHeight: "1.5rem" }}
-          >
-            {line.lineNumber !== undefined ? line.lineNumber : " "}
-          </div>
-        ))}
+    <div className="bg-card flex flex-col h-full">
+      {/* Code editor header with window controls */}
+      <div className="bg-secondary border-b border-border px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-destructive" />
+          <div className="w-3 h-3 rounded-full bg-chart-3" />
+          <div className="w-3 h-3 rounded-full bg-accent" />
+        </div>
+        <div className="text-sm font-mono text-muted-foreground">
+          {fileName || `${language}.${language === "typescript" ? "tsx" : language === "javascript" ? "jsx" : language}`}
+        </div>
+        <div className="w-20" /> {/* Spacer for balance */}
       </div>
 
-      {/* Code content with syntax highlighting */}
-      <div className="pl-12 overflow-auto">
-        <pre className="font-mono text-sm m-0 p-4">
-          <code className="block">
-            {highlightedLines.map((line, index) => {
-              const bgColor =
-                line.type === "added"
-                  ? "bg-accent/10 border-l-2 border-accent"
-                  : line.type === "removed"
-                  ? "bg-destructive/10 border-l-2 border-destructive"
-                  : "";
+      {/* Step indicator */}
+      {stepTitle && (
+        <div className="bg-secondary/50 border-b border-border px-6 py-3">
+          <p className="text-sm font-semibold text-foreground">{stepTitle}</p>
+        </div>
+      )}
 
-              return (
-                <div
-                  key={index}
-                  className={`flex items-start py-1 px-2 -mx-2 ${bgColor} ${
-                    line.type === "removed" ? "opacity-70" : ""
-                  }`}
-                >
-                  <span
-                    className="flex-1"
-                    dangerouslySetInnerHTML={{ __html: line.html }}
-                    style={{
-                      whiteSpace: "pre",
-                      tabSize: 2,
-                      fontFamily:
-                        "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
-                      textDecoration:
-                        line.type === "removed" ? "line-through" : "none",
-                    }}
-                  />
-                </div>
-              );
-            })}
-          </code>
-        </pre>
+      {/* Code content with syntax highlighting */}
+      <div className="bg-background relative flex-1 overflow-hidden flex flex-col">
+        {/* Line numbers gutter */}
+        <div className="absolute left-0 top-0 bottom-0 w-12 bg-muted/30 border-r border-border z-10 flex flex-col pointer-events-none">
+          {diff.lines.map((line, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-end px-2 py-0 text-xs text-muted-foreground font-mono"
+              style={{ minHeight: "1.5rem", lineHeight: "1.5rem" }}
+            >
+              {line.lineNumber !== undefined ? line.lineNumber : " "}
+            </div>
+          ))}
+        </div>
+
+        {/* Code content */}
+        <div className="pl-12 overflow-auto flex-1">
+          <pre className="font-mono text-sm m-0 p-6">
+            <code className="block">
+              {highlightedLines.map((line, index) => {
+                const bgColor =
+                  line.type === "added"
+                    ? "bg-accent/10 border-l-2 border-accent"
+                    : line.type === "removed"
+                    ? "bg-destructive/10 border-l-2 border-destructive"
+                    : "";
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-start py-1 px-2 -mx-6 ${bgColor} ${
+                      line.type === "removed" ? "opacity-70" : ""
+                    }`}
+                  >
+                    <span
+                      className="flex-1"
+                      dangerouslySetInnerHTML={{ __html: line.html }}
+                      style={{
+                        whiteSpace: "pre",
+                        tabSize: 2,
+                        fontFamily:
+                          "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+                        textDecoration:
+                          line.type === "removed" ? "line-through" : "none",
+                      }}
+                    />
+                  </div>
+                );
+              })}
+            </code>
+          </pre>
+        </div>
       </div>
     </div>
   );
