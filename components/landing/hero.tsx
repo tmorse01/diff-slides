@@ -90,22 +90,22 @@ export function Hero() {
               Documentation
             </Link>
           </div>
-        </div>
-      </div>
 
-      {/* Floating code preview */}
-      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-full max-w-3xl px-4 opacity-40 pointer-events-none">
-        <div className="bg-card/50 backdrop-blur-sm rounded-lg border border-border overflow-hidden shadow-2xl">
-          <DiffView
-            previousCode={`function calculateTotal() {
+          {/* Code preview */}
+          <div className="w-full max-w-3xl mx-auto mt-16 opacity-40 pointer-events-none text-left">
+            <div className="bg-card/50 backdrop-blur-sm rounded-lg border border-border overflow-hidden shadow-2xl">
+              <DiffView
+                previousCode={`function calculateTotal() {
   return price * quantity
 }`}
-            currentCode={`function calculateTotal() {
+                currentCode={`function calculateTotal() {
   return price * quantity + tax
 }`}
-            language="javascript"
-            fileName="calculate.js"
-          />
+                language="javascript"
+                fileName="calculate.js"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>
