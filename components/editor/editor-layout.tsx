@@ -128,7 +128,7 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)]">
+    <div className="flex h-screen overflow-hidden">
       <StepsSidebar
         steps={steps}
         selectedStepId={selectedStepId}
@@ -147,6 +147,8 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
         projectSlug={project.slug}
         projectId={project.id}
         steps={steps}
+        selectedStepId={selectedStepId}
+        onDuplicateStep={handleDuplicateStep}
       />
     </div>
   );

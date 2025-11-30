@@ -7,7 +7,6 @@ import { html } from "@codemirror/lang-html";
 import { css } from "@codemirror/lang-css";
 import { json } from "@codemirror/lang-json";
 import { oneDark } from "@codemirror/theme-one-dark";
-import { useTheme } from "next-themes";
 import type { LanguageSupport } from "@codemirror/language";
 
 const languageMap: Record<string, () => LanguageSupport> = {
@@ -32,18 +31,15 @@ export function CodeEditor({
   language = "typescript",
   readOnly = false,
 }: CodeEditorProps) {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
-
   const langExtension = languageMap[language.toLowerCase()] || javascript;
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden bg-background">
       <CodeMirror
         value={value}
         onChange={onChange}
         extensions={[langExtension()]}
-        theme={isDark ? oneDark : undefined}
+        theme={oneDark}
         readOnly={readOnly}
         basicSetup={{
           lineNumbers: true,

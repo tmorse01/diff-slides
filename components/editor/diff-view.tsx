@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import { computeDiff } from "@/lib/diff"
+import { useMemo } from "react";
+import { computeDiff } from "@/lib/diff";
 
 interface DiffViewProps {
-  previousCode: string
-  currentCode: string
-  language: string
+  previousCode: string;
+  currentCode: string;
+  language: string;
 }
 
 export function DiffView({
@@ -17,44 +17,49 @@ export function DiffView({
   const diff = useMemo(
     () => computeDiff(previousCode || "", currentCode || ""),
     [previousCode, currentCode]
-  )
+  );
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden bg-background">
       <div className="font-mono text-sm">
         {diff.lines.map((line, index) => {
           const bgColor =
             line.type === "added"
-              ? "bg-green-500/20 dark:bg-green-500/10"
+              ? "bg-accent/10 border-l-2 border-accent"
               : line.type === "removed"
-              ? "bg-red-500/20 dark:bg-red-500/10"
-              : "bg-transparent"
+              ? "bg-destructive/10 border-l-2 border-destructive"
+              : "";
 
           const textColor =
             line.type === "added"
-              ? "text-green-600 dark:text-green-400"
+              ? "text-accent"
               : line.type === "removed"
-              ? "text-red-600 dark:text-red-400"
-              : "text-foreground"
+              ? "text-destructive line-through"
+              : "text-foreground";
 
           const prefix =
-            line.type === "added" ? "+ " : line.type === "removed" ? "- " : "  "
+            line.type === "added"
+              ? "+ "
+              : line.type === "removed"
+              ? "- "
+              : "  ";
 
           return (
             <div
               key={index}
-              className={`flex ${bgColor} ${textColor} px-4 py-1`}
+              className={`flex items-start py-1 -mx-4 px-4 ${bgColor}`}
             >
-              <span className="select-none mr-4 text-muted-foreground">
+              <span className="select-none mr-4 text-muted-foreground w-8 text-right">
                 {line.lineNumber || " "}
               </span>
-              <span className="select-none mr-2">{prefix}</span>
-              <span className="flex-1">{line.value || " "}</span>
+              <span className="select-none mr-2 text-muted-foreground">
+                {prefix}
+              </span>
+              <span className={`flex-1 ${textColor}`}>{line.value || " "}</span>
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
-
