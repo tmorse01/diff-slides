@@ -52,6 +52,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
+   **Note**: `SUPABASE_SERVICE_ROLE_KEY` is required for the temporary projects feature (allowing users to create projects without registering). You can find this key in your Supabase project settings under API → service_role key. Keep this key secure and never expose it to the client.
+
 4. Set up Supabase:
 
    - Create a new Supabase project
@@ -116,7 +118,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - [ ] Environment variables configured in Vercel:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY` (required for temporary projects feature)
 - [ ] Build succeeds
 - [ ] Auth flow tested
 - [ ] Public project sharing tested

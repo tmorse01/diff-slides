@@ -1,52 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
 import { createStepSchema } from "@/lib/validations";
-import {
-  createErrorResponse,
-  NotFoundError,
-  UnauthorizedError,
-} from "@/lib/errors";
-import { requireAuth } from "@/lib/auth";
+import { createErrorResponse } from "@/lib/errors";
+import { verifyProjectAccess, getProjectClient } from "@/lib/project-access";
 import { NextRequest } from "next/server";
-import type { Project, Step, Database } from "@/types/database";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-async function getProjectAndVerifyOwnership(
-  projectId: string,
-  userId: string,
-  supabase: SupabaseClient<Database>
-) {
-  const { data: project, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("id", projectId)
-    .single();
-
-  if (error || !project) {
-    throw new NotFoundError("Project not found");
-  }
-
-  const typedProject = project as Project;
-
-  if (typedProject.user_id !== userId) {
-    throw new UnauthorizedError(
-      "You don't have permission to access this project"
-    );
-  }
-
-  return typedProject;
-}
+import type { Step } from "@/types/database";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ projectId: string }> | { projectId: string } }
 ) {
   try {
-    const user = await requireAuth();
-    const supabase = await createClient();
     const resolvedParams = params instanceof Promise ? await params : params;
     const { projectId } = resolvedParams;
 
-    await getProjectAndVerifyOwnership(projectId, user.id, supabase);
+    const project = await verifyProjectAccess(projectId);
+    const { client: supabase } = await getProjectClient(project);
 
     const body = await request.json();
     const validatedData = createStepSchema.parse(body);

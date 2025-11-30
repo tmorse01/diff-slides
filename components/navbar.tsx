@@ -80,8 +80,11 @@ export function Navbar() {
               <Button asChild variant="ghost">
                 <Link href="/auth/login">Login</Link>
               </Button>
+              <Button asChild variant="outline">
+                <Link href="/projects/new">Create Project</Link>
+              </Button>
               <Button asChild>
-                <Link href="/auth/register">Get Started</Link>
+                <Link href="/auth/register">Sign Up</Link>
               </Button>
             </div>
           )}

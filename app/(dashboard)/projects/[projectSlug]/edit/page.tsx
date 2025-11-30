@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
-import { requireAuth } from "@/lib/auth";
-import { NotFoundError, UnauthorizedError } from "@/lib/errors";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyProjectAccess } from "@/lib/project-access";
+import { NotFoundError } from "@/lib/errors";
 import { EditorLayout } from "@/components/editor/editor-layout";
 import type { Project, Step } from "@/types/database";
 
@@ -9,37 +9,44 @@ export default async function EditProjectPage({
 }: {
   params: Promise<{ projectSlug: string }> | { projectSlug: string };
 }) {
-  const user = await requireAuth();
-  const supabase = await createClient();
   const resolvedParams: { projectSlug: string } =
     params instanceof Promise ? await params : params;
   const { projectSlug } = resolvedParams;
 
-  const { data: project, error } = await supabase
+  // Use admin client to fetch project (bypasses RLS)
+  // We'll verify access using verifyProjectAccess
+  const adminClient = createAdminClient();
+  const { data: projects, error } = await adminClient
     .from("projects")
     .select("*")
-    .eq("slug", projectSlug)
-    .single();
+    .eq("slug", projectSlug);
 
-  if (error || !project) {
+  if (error || !projects || projects.length === 0) {
     throw new NotFoundError("Project not found");
   }
 
-  const typedProject = project as Project;
-
-  if (typedProject.user_id !== user.id) {
-    throw new UnauthorizedError(
-      "You don't have permission to edit this project"
-    );
+  // Find the project the user has access to
+  let project: Project | null = null;
+  for (const p of projects) {
+    try {
+      project = await verifyProjectAccess(p.id);
+      break;
+    } catch {
+      // Continue to next project
+    }
   }
 
-  const { data: steps } = await supabase
+  if (!project) {
+    throw new NotFoundError("Project not found");
+  }
+
+  const { data: steps } = await adminClient
     .from("steps")
     .select("*")
-    .eq("project_id", typedProject.id)
+    .eq("project_id", project.id)
     .order("index", { ascending: true });
 
   const typedSteps = (steps || []) as Step[];
 
-  return <EditorLayout project={typedProject} initialSteps={typedSteps} />;
+  return <EditorLayout project={project} initialSteps={typedSteps} />;
 }

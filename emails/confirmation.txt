@@ -1,0 +1,12 @@
+Confirm your email address - DiffSlides
+
+Thanks for signing up! Please confirm your email address by clicking the link below to complete your registration.
+
+{{ .ConfirmationURL }}
+
+This email was sent to {{ .Email }}
+
+If you didn't create an account with DiffSlides, you can safely ignore this email.
+
+© 2025 DiffSlides. All rights reserved.
+

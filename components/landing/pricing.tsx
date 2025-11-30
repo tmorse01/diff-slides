@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Check } from "lucide-react";
+import Link from "next/link";
 
 const plan = {
   name: "Free",
@@ -48,8 +49,8 @@ export function Pricing() {
               </p>
             </div>
 
-            <Button className="w-full mb-6" variant="default" size="lg">
-              {plan.cta}
+            <Button className="w-full mb-6" variant="default" size="lg" asChild>
+              <Link href="/projects/new">{plan.cta}</Link>
             </Button>
 
             <div className="space-y-3">

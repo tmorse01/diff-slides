@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { migrateTemporaryProjectsToUser } from "@/lib/migrate-temporary-projects"
 import { NextResponse } from "next/server"
 
 export async function GET(request: Request) {
@@ -8,7 +9,12 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data } = await supabase.auth.exchangeCodeForSession(code)
+    
+    // Migrate temporary projects to user account
+    if (data.user) {
+      await migrateTemporaryProjectsToUser(data.user.id)
+    }
   }
 
   // URL to redirect to after sign in process completes

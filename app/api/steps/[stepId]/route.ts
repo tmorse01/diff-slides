@@ -1,28 +1,19 @@
-import { createClient } from "@/lib/supabase/server";
 import { updateStepSchema } from "@/lib/validations";
-import {
-  createErrorResponse,
-  NotFoundError,
-  UnauthorizedError,
-} from "@/lib/errors";
-import { requireAuth } from "@/lib/auth";
+import { createErrorResponse, NotFoundError } from "@/lib/errors";
+import { verifyProjectAccess, getProjectClient } from "@/lib/project-access";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest } from "next/server";
-import type { Step, Database } from "@/types/database";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Step } from "@/types/database";
 
-async function getStepAndVerifyOwnership(
-  stepId: string,
-  userId: string,
-  supabase: SupabaseClient<Database>
-) {
-  const { data: step, error } = await supabase
+async function getStepAndVerifyAccess(stepId: string): Promise<{
+  step: Step;
+  projectId: string;
+}> {
+  const adminClient = createAdminClient();
+  
+  const { data: step, error } = await adminClient
     .from("steps")
-    .select(
-      `
-      *,
-      projects!inner(user_id)
-    `
-    )
+    .select("*, projects!inner(id, user_id, session_id)")
     .eq("id", stepId)
     .single();
 
@@ -30,15 +21,17 @@ async function getStepAndVerifyOwnership(
     throw new NotFoundError("Step not found");
   }
 
-  const typedStep = step as Step & { projects: { user_id: string } };
+  const typedStep = step as Step & { 
+    projects: { id: string; user_id: string | null; session_id: string | null } 
+  };
 
-  if (typedStep.projects.user_id !== userId) {
-    throw new UnauthorizedError(
-      "You don't have permission to access this step"
-    );
-  }
+  // Verify access to the project
+  await verifyProjectAccess(typedStep.projects.id);
 
-  return typedStep;
+  return {
+    step: typedStep as Step,
+    projectId: typedStep.projects.id,
+  };
 }
 
 export async function PATCH(
@@ -46,12 +39,12 @@ export async function PATCH(
   { params }: { params: Promise<{ stepId: string }> | { stepId: string } }
 ) {
   try {
-    const user = await requireAuth();
-    const supabase = await createClient();
     const resolvedParams = params instanceof Promise ? await params : params;
     const { stepId } = resolvedParams;
 
-    await getStepAndVerifyOwnership(stepId, user.id, supabase);
+    const { projectId } = await getStepAndVerifyAccess(stepId);
+    const project = await verifyProjectAccess(projectId);
+    const { client: supabase } = await getProjectClient(project);
 
     const body = await request.json();
     const validatedData = updateStepSchema.parse(body);
@@ -85,12 +78,12 @@ export async function DELETE(
   { params }: { params: Promise<{ stepId: string }> | { stepId: string } }
 ) {
   try {
-    const user = await requireAuth();
-    const supabase = await createClient();
     const resolvedParams = params instanceof Promise ? await params : params;
     const { stepId } = resolvedParams;
 
-    const step = await getStepAndVerifyOwnership(stepId, user.id, supabase);
+    const { step, projectId } = await getStepAndVerifyAccess(stepId);
+    const project = await verifyProjectAccess(projectId);
+    const { client: supabase } = await getProjectClient(project);
 
     // Delete the step
     const { error: deleteError } = await supabase

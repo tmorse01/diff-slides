@@ -1,53 +1,23 @@
-import { createClient } from "@/lib/supabase/server";
 import { updateProjectSchema } from "@/lib/validations";
 import { generateSlug, ensureUniqueSlug } from "@/lib/slug";
-import {
-  createErrorResponse,
-  NotFoundError,
-  UnauthorizedError,
-} from "@/lib/errors";
-import { requireAuth } from "@/lib/auth";
+import { createErrorResponse } from "@/lib/errors";
+import { verifyProjectAccess, getProjectClient } from "@/lib/project-access";
+import { getUser } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest } from "next/server";
-import type { Project, ProjectUpdate, Database } from "@/types/database";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-async function getProjectAndVerifyOwnership(
-  projectId: string,
-  userId: string,
-  supabase: SupabaseClient<Database>
-) {
-  const { data: project, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("id", projectId)
-    .single();
-
-  if (error || !project) {
-    throw new NotFoundError("Project not found");
-  }
-
-  const typedProject = project as Project;
-
-  if (typedProject.user_id !== userId) {
-    throw new UnauthorizedError(
-      "You don't have permission to access this project"
-    );
-  }
-
-  return typedProject;
-}
+import type { ProjectUpdate } from "@/types/database";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ projectId: string }> | { projectId: string } }
 ) {
   try {
-    const user = await requireAuth();
-    const supabase: SupabaseClient<Database> = await createClient();
     const resolvedParams = params instanceof Promise ? await params : params;
     const { projectId } = resolvedParams;
 
-    await getProjectAndVerifyOwnership(projectId, user.id, supabase);
+    const project = await verifyProjectAccess(projectId);
+    const { client: supabase, isTemporary } = await getProjectClient(project);
+    const user = await getUser();
 
     const body = await request.json();
     const validatedData = updateProjectSchema.parse(body);
@@ -59,12 +29,36 @@ export async function PATCH(
     // If name is being updated, regenerate slug
     if (validatedData.name) {
       const slug = generateSlug(validatedData.name);
-      updateData.slug = await ensureUniqueSlug(
-        slug,
-        user.id,
-        supabase,
-        projectId
-      );
+      
+      if (isTemporary) {
+        // For temporary projects, check uniqueness within session
+        const sessionId = project.session_id!;
+        const adminClient = createAdminClient();
+        const { data: existingProjects } = await adminClient
+          .from("projects")
+          .select("slug")
+          .eq("session_id", sessionId)
+          .eq("slug", slug)
+          .neq("id", projectId);
+
+        let uniqueSlug = slug;
+        if (existingProjects && existingProjects.length > 0) {
+          let counter = 1;
+          while (existingProjects.some(p => p.slug === `${slug}-${counter}`)) {
+            counter++;
+          }
+          uniqueSlug = `${slug}-${counter}`;
+        }
+        updateData.slug = uniqueSlug;
+      } else if (user) {
+        // For authenticated users, use existing logic
+        updateData.slug = await ensureUniqueSlug(
+          slug,
+          user.id,
+          supabase,
+          projectId
+        );
+      }
     }
 
     updateData.updated_at = new Date().toISOString();
@@ -93,12 +87,11 @@ export async function DELETE(
   { params }: { params: Promise<{ projectId: string }> | { projectId: string } }
 ) {
   try {
-    const user = await requireAuth();
-    const supabase = await createClient();
     const resolvedParams = params instanceof Promise ? await params : params;
     const { projectId } = resolvedParams;
 
-    await getProjectAndVerifyOwnership(projectId, user.id, supabase);
+    const project = await verifyProjectAccess(projectId);
+    const { client: supabase } = await getProjectClient(project);
 
     const { error } = await supabase
       .from("projects")

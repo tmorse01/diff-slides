@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { toast } from "@/hooks/use-toast"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,13 +33,25 @@ export function ProjectActions({ projectId, projectSlug }: ProjectActionsProps) 
       if (response.ok) {
         router.refresh()
         router.push("/dashboard")
+        toast({
+          title: "Project deleted",
+          description: "The project has been successfully deleted.",
+        })
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to delete project")
+        toast({
+          variant: "destructive",
+          title: "Failed to delete project",
+          description: error.error || "An error occurred while deleting the project.",
+        })
       }
     } catch (error) {
       console.error("Error deleting project:", error)
-      alert("Failed to delete project")
+      toast({
+        variant: "destructive",
+        title: "Failed to delete project",
+        description: "An error occurred while deleting the project.",
+      })
     }
   }
 

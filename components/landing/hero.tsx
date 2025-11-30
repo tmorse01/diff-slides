@@ -18,7 +18,7 @@ export function Hero() {
     });
   }, [supabase]);
 
-  const ctaHref = user ? "/dashboard" : "/auth/register";
+  const ctaHref = user ? "/dashboard" : "/projects/new";
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -56,22 +56,37 @@ export function Hero() {
               className="bg-primary text-primary-foreground hover:bg-primary/90 group"
             >
               <Link href={ctaHref}>
-                {user ? "Go to Dashboard" : "Get Started"}
+                {user ? "Go to Dashboard" : "Create Project"}
                 <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="group bg-transparent"
-            >
-              <Link href="/view/demo">
-                <Play className="mr-2 w-4 h-4" />
-                Try Demo
-              </Link>
-            </Button>
+            {!user && (
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="group bg-transparent"
+              >
+                <Link href="/view/demo">
+                  <Play className="mr-2 w-4 h-4" />
+                  Try Demo
+                </Link>
+              </Button>
+            )}
           </div>
+          {!user && (
+            <p className="text-sm text-muted-foreground text-center pt-2">
+              No account required to get started.{" "}
+              <Link href="/projects/new" className="text-primary hover:underline">
+                Create your first project
+              </Link>{" "}
+              or{" "}
+              <Link href="/auth/register" className="text-primary hover:underline">
+                sign up
+              </Link>{" "}
+              to save permanently.
+            </p>
+          )}
 
           {/* Secondary links */}
           <div className="flex items-center justify-center gap-6 pb-8">

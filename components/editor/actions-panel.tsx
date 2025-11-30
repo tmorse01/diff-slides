@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -50,7 +51,10 @@ export function ActionsPanel({
       steps: steps.sort((a, b) => a.index - b.index),
     };
     await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-    alert("JSON copied to clipboard!");
+    toast({
+      title: "Copied to clipboard",
+      description: "JSON data has been copied to your clipboard.",
+    });
   };
 
   const handleDuplicate = () => {

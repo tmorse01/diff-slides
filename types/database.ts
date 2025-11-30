@@ -35,7 +35,8 @@ export interface Database {
       projects: {
         Row: {
           id: string;
-          user_id: string;
+          user_id: string | null;
+          session_id: string | null;
           name: string;
           slug: string;
           description: string | null;
@@ -45,7 +46,8 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          user_id: string;
+          user_id?: string | null;
+          session_id?: string | null;
           name: string;
           slug: string;
           description?: string | null;
@@ -55,7 +57,8 @@ export interface Database {
         };
         Update: {
           id?: string;
-          user_id?: string;
+          user_id?: string | null;
+          session_id?: string | null;
           name?: string;
           slug?: string;
           description?: string | null;
