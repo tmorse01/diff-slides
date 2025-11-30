@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Code2, User, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
+import { DiffCodeIcon } from "@/components/diff-code-icon";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -44,7 +45,7 @@ export function Navbar() {
           href="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <Code2 className="w-5 h-5 text-accent" />
+          <DiffCodeIcon size={20} className="text-accent" />
           <span className="text-xl font-mono font-semibold text-foreground">
             DiffSlides
           </span>

@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "DiffSlides - Explain code by highlighting how it changes",
   description: "Create slideshow-style tutorials from code changes",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
