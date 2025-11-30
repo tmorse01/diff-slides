@@ -1,5 +1,6 @@
 -- Seed data for React Query Tutorial steps
 -- Project ID: b2ac8743-290c-4af2-9cbe-914eec0bd63a
+-- Focus: Progressive tutorial on useQuery hook - incremental changes
 
 -- Clear any existing steps for this project (optional, comment out if you want to keep existing)
 -- DELETE FROM steps WHERE project_id = 'b2ac8743-290c-4af2-9cbe-914eec0bd63a';
@@ -9,414 +10,175 @@ INSERT INTO steps (project_id, index, title, notes, language, code) VALUES
 (
   'b2ac8743-290c-4af2-9cbe-914eec0bd63a',
   0,
-  '1. Setup and Installation',
-  'First, install TanStack Query and set up the QueryClient provider in your app.',
+  '1. Basic useQuery',
+  'Start with the simplest useQuery. Just pass a queryKey and queryFn.',
   'typescript',
-  $code$// Install dependencies
-// npm install @tanstack/react-query
+  $code$import { useQuery } from '@tanstack/react-query';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+function TodoList() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['todos'],
+    queryFn: () => fetch('/api/todos').then(res => res.json()),
+  });
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error</div>;
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <YourApp />
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
-  );
+  return <div>{JSON.stringify(data)}</div>;
 }$code$
 ),
 (
   'b2ac8743-290c-4af2-9cbe-914eec0bd63a',
   1,
-  '2. Basic Query Hook',
-  'Create a simple query to fetch data. This example fetches a list of todos.',
+  '2. Add variable to queryKey',
+  'Include variables in the queryKey array. Each unique key gets its own cache entry.',
   'typescript',
   $code$import { useQuery } from '@tanstack/react-query';
 
-interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-async function fetchTodos(): Promise<Todo[]> {
-  const response = await fetch('/api/todos');
-  if (!response.ok) {
-    throw new Error('Failed to fetch todos');
-  }
-  return response.json();
-}
-
-function TodoList() {
+function TodoDetail({ todoId }: { todoId: number }) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['todos'],
-    queryFn: fetchTodos,
+    queryKey: ['todos', todoId],
+    queryFn: () => fetch(`/api/todos/${todoId}`).then(res => res.json()),
   });
 
   if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error) return <div>Error</div>;
 
-  return (
-    <ul>
-      {data?.map((todo) => (
-        <li key={todo.id}>{todo.title}</li>
-      ))}
-    </ul>
-  );
+  return <div>{JSON.stringify(data)}</div>;
 }$code$
 ),
 (
   'b2ac8743-290c-4af2-9cbe-914eec0bd63a',
   2,
-  '3. Query with Variables',
-  'Use query variables to fetch specific data. This example fetches a single todo by ID.',
+  '3. Add enabled option',
+  'Use enabled to conditionally run the query. Prevents fetching when data is missing.',
   'typescript',
   $code$import { useQuery } from '@tanstack/react-query';
 
-interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-async function fetchTodo(id: number): Promise<Todo> {
-  const response = await fetch(`/api/todos/${id}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch todo');
-  }
-  return response.json();
-}
-
-function TodoDetail({ todoId }: { todoId: number }) {
+function TodoDetail({ todoId }: { todoId: number | null }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['todos', todoId],
-    queryFn: () => fetchTodo(todoId),
-    enabled: !!todoId, // Only run query if todoId exists
+    queryFn: () => fetch(`/api/todos/${todoId}`).then(res => res.json()),
+    enabled: !!todoId,
   });
 
   if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
+  if (error) return <div>Error</div>;
 
-  return (
-    <div>
-      <h2>{data?.title}</h2>
-      <p>Completed: {data?.completed ? 'Yes' : 'No'}</p>
-    </div>
-  );
+  return <div>{JSON.stringify(data)}</div>;
 }$code$
 ),
 (
   'b2ac8743-290c-4af2-9cbe-914eec0bd63a',
   3,
-  '4. Creating Mutations',
-  'Use mutations to create, update, or delete data. This example creates a new todo.',
+  '4. Add staleTime',
+  'Set staleTime to control how long data stays fresh. Fresh data won''t refetch automatically.',
   'typescript',
-  $code$import { useMutation, useQueryClient } from '@tanstack/react-query';
+  $code$import { useQuery } from '@tanstack/react-query';
 
-interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-interface CreateTodoInput {
-  title: string;
-  completed?: boolean;
-}
-
-async function createTodo(input: CreateTodoInput): Promise<Todo> {
-  const response = await fetch('/api/todos', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to create todo');
-  }
-  return response.json();
-}
-
-function CreateTodoForm() {
-  const queryClient = useQueryClient();
-  
-  const mutation = useMutation({
-    mutationFn: createTodo,
-    onSuccess: () => {
-      // Invalidate and refetch todos list
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
-    },
+function TodoList() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['todos'],
+    queryFn: () => fetch('/api/todos').then(res => res.json()),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    mutation.mutate({
-      title: formData.get('title') as string,
-    });
-  };
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error</div>;
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input name="title" placeholder="Todo title" required />
-      <button type="submit" disabled={mutation.isPending}>
-        {mutation.isPending ? 'Creating...' : 'Create Todo'}
-      </button>
-      {mutation.isError && (
-        <div>Error: {mutation.error.message}</div>
-      )}
-    </form>
-  );
+  return <div>{JSON.stringify(data)}</div>;
 }$code$
 ),
 (
   'b2ac8743-290c-4af2-9cbe-914eec0bd63a',
   4,
-  '5. Updating with Mutations',
-  'Update existing data using mutations. This example toggles a todo''s completed status.',
+  '5. Add refetchInterval',
+  'Set refetchInterval to automatically refetch data at regular intervals.',
   'typescript',
-  $code$import { useMutation, useQueryClient } from '@tanstack/react-query';
+  $code$import { useQuery } from '@tanstack/react-query';
 
-interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-async function updateTodo(id: number, updates: Partial<Todo>): Promise<Todo> {
-  const response = await fetch(`/api/todos/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updates),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update todo');
-  }
-  return response.json();
-}
-
-function TodoItem({ todo }: { todo: Todo }) {
-  const queryClient = useQueryClient();
-  
-  const toggleMutation = useMutation({
-    mutationFn: (completed: boolean) => 
-      updateTodo(todo.id, { completed }),
-    onSuccess: () => {
-      // Invalidate both the list and this specific todo
-      queryClient.invalidateQueries({ queryKey: ['todos'] });
-      queryClient.invalidateQueries({ queryKey: ['todos', todo.id] });
-    },
+function TodoList() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['todos'],
+    queryFn: () => fetch('/api/todos').then(res => res.json()),
+    staleTime: 1000 * 60 * 5,
+    refetchInterval: 1000 * 30, // Every 30 seconds
   });
 
-  return (
-    <div>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={(e) => toggleMutation.mutate(e.target.checked)}
-        disabled={toggleMutation.isPending}
-      />
-      <span>{todo.title}</span>
-    </div>
-  );
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error</div>;
+
+  return <div>{JSON.stringify(data)}</div>;
 }$code$
 ),
 (
   'b2ac8743-290c-4af2-9cbe-914eec0bd63a',
   5,
-  '6. Optimistic Updates',
-  'Update the UI immediately before the server responds, then rollback on error. This provides instant feedback.',
+  '6. Add second useQuery',
+  'Add another useQuery that depends on the first. Use enabled to wait for the first query.',
   'typescript',
-  $code$import { useMutation, useQueryClient } from '@tanstack/react-query';
+  $code$import { useQuery } from '@tanstack/react-query';
 
-interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-async function updateTodo(id: number, updates: Partial<Todo>): Promise<Todo> {
-  const response = await fetch(`/api/todos/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(updates),
-  });
-  if (!response.ok) {
-    throw new Error('Failed to update todo');
-  }
-  return response.json();
-}
-
-function TodoItem({ todo }: { todo: Todo }) {
-  const queryClient = useQueryClient();
-  
-  const toggleMutation = useMutation({
-    mutationFn: (completed: boolean) => 
-      updateTodo(todo.id, { completed }),
-    
-    // Optimistically update the cache
-    onMutate: async (newCompleted) => {
-      // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['todos', todo.id] });
-      
-      // Snapshot previous value
-      const previousTodo = queryClient.getQueryData<Todo>(['todos', todo.id]);
-      
-      // Optimistically update
-      queryClient.setQueryData<Todo>(['todos', todo.id], (old) => ({
-        ...old!,
-        completed: newCompleted,
-      }));
-      
-      return { previousTodo };
-    },
-    
-    // Rollback on error
-    onError: (err, newCompleted, context) => {
-      if (context?.previousTodo) {
-        queryClient.setQueryData(['todos', todo.id], context.previousTodo);
-      }
-    },
-    
-    // Refetch on success
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['todos', todo.id] });
-    },
+function UserTodos({ userId }: { userId: number }) {
+  const { data: user } = useQuery({
+    queryKey: ['users', userId],
+    queryFn: () => fetch(`/api/users/${userId}`).then(res => res.json()),
   });
 
-  return (
-    <div>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={(e) => toggleMutation.mutate(e.target.checked)}
-        disabled={toggleMutation.isPending}
-      />
-      <span>{todo.title}</span>
-    </div>
-  );
+  const { data: todos } = useQuery({
+    queryKey: ['users', userId, 'todos'],
+    queryFn: () => fetch(`/api/users/${userId}/todos`).then(res => res.json()),
+    enabled: !!user,
+  });
+
+  return <div>{JSON.stringify({ user, todos })}</div>;
 }$code$
 ),
 (
   'b2ac8743-290c-4af2-9cbe-914eec0bd63a',
   6,
-  '7. Error Handling and Retry Logic',
-  'Configure error handling and retry behavior for better user experience.',
+  '7. Add retry options',
+  'Configure retry behavior. React Query will automatically retry failed queries.',
   'typescript',
   $code$import { useQuery } from '@tanstack/react-query';
 
-interface Todo {
-  id: number;
-  title: string;
-  completed: boolean;
-}
-
-async function fetchTodos(): Promise<Todo[]> {
-  const response = await fetch('/api/todos');
-  if (!response.ok) {
-    throw new Error('Failed to fetch todos');
-  }
-  return response.json();
-}
-
 function TodoList() {
-  const { data, isLoading, error, isError } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['todos'],
-    queryFn: fetchTodos,
-    retry: 3, // Retry 3 times on failure
+    queryFn: () => fetch('/api/todos').then(res => res.json()),
+    retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    // Exponential backoff: 1s, 2s, 4s, max 30s
   });
 
   if (isLoading) return <div>Loading...</div>;
-  
-  if (isError) {
-    return (
-      <div>
-        <p>Error: {error.message}</p>
-        <button onClick={() => queryClient.invalidateQueries({ queryKey: ['todos'] })}>
-          Retry
-        </button>
-      </div>
-    );
-  }
+  if (error) return <div>Error</div>;
 
-  return (
-    <ul>
-      {data?.map((todo) => (
-        <li key={todo.id}>{todo.title}</li>
-      ))}
-    </ul>
-  );
+  return <div>{JSON.stringify(data)}</div>;
 }$code$
 ),
 (
   'b2ac8743-290c-4af2-9cbe-914eec0bd63a',
   7,
-  '8. Dependent Queries',
-  'Chain queries where one depends on the result of another. This example fetches user details, then their todos.',
+  '8. Use refetch function',
+  'Destructure refetch from useQuery to manually trigger a refetch. Use isFetching to show loading state.',
   'typescript',
   $code$import { useQuery } from '@tanstack/react-query';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-interface Todo {
-  id: number;
-  userId: number;
-  title: string;
-  completed: boolean;
-}
-
-async function fetchUser(id: number): Promise<User> {
-  const response = await fetch(`/api/users/${id}`);
-  if (!response.ok) throw new Error('Failed to fetch user');
-  return response.json();
-}
-
-async function fetchUserTodos(userId: number): Promise<Todo[]> {
-  const response = await fetch(`/api/users/${userId}/todos`);
-  if (!response.ok) throw new Error('Failed to fetch todos');
-  return response.json();
-}
-
-function UserTodos({ userId }: { userId: number }) {
-  // First, fetch the user
-  const { data: user } = useQuery({
-    queryKey: ['users', userId],
-    queryFn: () => fetchUser(userId),
+function TodoList() {
+  const { data, isLoading, error, isFetching, refetch } = useQuery({
+    queryKey: ['todos'],
+    queryFn: () => fetch('/api/todos').then(res => res.json()),
   });
 
-  // Then, fetch todos for that user (only runs after user is loaded)
-  const { data: todos, isLoading } = useQuery({
-    queryKey: ['users', userId, 'todos'],
-    queryFn: () => fetchUserTodos(userId),
-    enabled: !!user, // Only run when user data is available
-  });
-
-  if (isLoading) return <div>Loading todos...</div>;
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error</div>;
 
   return (
     <div>
-      <h2>{user?.name}''s Todos</h2>
-      <ul>
-        {todos?.map((todo) => (
-          <li key={todo.id}>{todo.title}</li>
-        ))}
-      </ul>
+      <button onClick={() => refetch()} disabled={isFetching}>
+        Refresh
+      </button>
+      <div>{JSON.stringify(data)}</div>
     </div>
   );
 }$code$

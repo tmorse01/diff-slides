@@ -38,11 +38,16 @@ export function Navbar() {
   };
 
   return (
-    <nav className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-50 justify-center">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link
+          href="/"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+        >
           <Code2 className="w-5 h-5 text-accent" />
-          <span className="text-xl font-mono font-semibold text-foreground">DiffSlides</span>
+          <span className="text-xl font-mono font-semibold text-foreground">
+            DiffSlides
+          </span>
         </Link>
         <div className="flex items-center gap-4">
           {user ? (
