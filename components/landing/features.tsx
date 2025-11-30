@@ -1,53 +1,80 @@
-import { Sparkles, FileCode2, Video, Zap } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { Sparkles, FileCode2, Video, Zap } from "lucide-react";
+import {
+  FrostedGlassCard,
+  getGlowIconColor,
+} from "@/components/ui/frosted-glass-card";
 
 const features = [
   {
     icon: Sparkles,
     title: "Highlight code changes automatically",
-    description: "Smart diff detection identifies additions, deletions, and modifications in your codebase.",
+    description:
+      "Smart diff detection identifies additions, deletions, and modifications in your codebase.",
   },
   {
     icon: FileCode2,
     title: "Generate step-by-step slides",
-    description: "Transform commits into interactive tutorials that tell the story of your code evolution.",
+    description:
+      "Transform commits into interactive tutorials that tell the story of your code evolution.",
   },
   {
     icon: Video,
     title: "Export to video/slideshow",
-    description: "Create MP4 videos, animated GIFs, PDF presentations, or embeddable HTML widgets.",
+    description:
+      "Create MP4 videos, animated GIFs, PDF presentations, or embeddable HTML widgets.",
   },
   {
     icon: Zap,
     title: "Cinematic playback",
-    description: "Smooth transitions and professional animations make your code explanations engaging.",
+    description:
+      "Smooth transitions and professional animations make your code explanations engaging.",
   },
-]
+];
 
 export function Features() {
+  // Color glows matching window buttons: red (destructive), yellow (chart-3), green (accent)
+  const glowColors: Array<"destructive" | "chart-3" | "accent"> = [
+    "destructive", // Red
+    "chart-3", // Yellow
+    "accent", // Green
+    "destructive", // Red (repeat pattern)
+  ];
+
   return (
     <section className="py-24 relative">
-      <div className="container px-4">
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-balance">Built for developers who teach</h2>
+      <div className="container px-4 mx-auto">
+        <div className="text-center mb-16 space-y-4 max-w-3xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-bold text-balance">
+            Built for developers who teach
+          </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-balance">
-            Every feature designed to make code storytelling effortless and impactful
+            Every feature designed to make code storytelling effortless and
+            impactful
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, idx) => (
-            <Card key={idx} className="p-6 bg-card border-border hover:border-accent/50 transition-colors group">
-              <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                <feature.icon className="w-6 h-6 text-accent" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
-            </Card>
-          ))}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          {features.map((feature, idx) => {
+            const IconComponent = feature.icon;
+            const glowColor = glowColors[idx];
+            const iconColor = getGlowIconColor(glowColor);
+
+            return (
+              <FrostedGlassCard key={idx} glowColor={glowColor}>
+                <div className="w-12 h-12 rounded-lg bg-white/5 backdrop-blur-sm flex items-center justify-center mb-4 group-hover:bg-white/10 transition-colors border border-white/10">
+                  <IconComponent className={`w-6 h-6 ${iconColor}`} />
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">
+                  {feature.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
+              </FrostedGlassCard>
+            );
+          })}
         </div>
       </div>
     </section>
-  )
+  );
 }
-

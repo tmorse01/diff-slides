@@ -1,24 +1,25 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { ChevronRight, Code2, Play, Github } from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button";
+import { ChevronRight, Play, Github } from "lucide-react";
+import { DiffCodeIcon } from "@/components/diff-code-icon";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export function Hero() {
-  const router = useRouter()
-  const [user, setUser] = useState(false)
-  const supabase = createClient()
+  const router = useRouter();
+  const [user, setUser] = useState(false);
+  const supabase = createClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(!!user)
-    })
-  }, [supabase])
+      setUser(!!user);
+    });
+  }, [supabase]);
 
-  const ctaHref = user ? "/dashboard" : "/auth/register"
+  const ctaHref = user ? "/dashboard" : "/auth/register";
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -28,9 +29,11 @@ export function Hero() {
       <div className="container relative z-10 px-4 py-32">
         <div className="mx-auto max-w-5xl text-center space-y-8">
           {/* Logo/Brand */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border">
-            <Code2 className="w-4 h-4 text-accent" />
-            <span className="text-sm font-mono text-muted-foreground">DiffSlides</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/80 backdrop-blur-sm border border-border">
+            <DiffCodeIcon size={16} />
+            <span className="text-sm font-mono text-muted-foreground">
+              DiffSlides
+            </span>
           </div>
 
           {/* Main heading */}
@@ -42,19 +45,28 @@ export function Hero() {
           </h1>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto text-balance leading-relaxed">
-            Automatically generate slideshow-style tutorial steps from code diffs. Highlight changes over time and teach
-            concepts visually.
+            Automatically generate slideshow-style tutorial steps from code
+            diffs. Highlight changes over time and teach concepts visually.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 group">
+            <Button
+              asChild
+              size="lg"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 group"
+            >
               <Link href={ctaHref}>
                 {user ? "Go to Dashboard" : "Get Started"}
                 <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="group bg-transparent">
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="group bg-transparent"
+            >
               <Link href="/view/demo">
                 <Play className="mr-2 w-4 h-4" />
                 Try Demo
@@ -63,16 +75,19 @@ export function Hero() {
           </div>
 
           {/* Secondary links */}
-          <div className="flex items-center justify-center gap-6 pt-4">
+          <div className="flex items-center justify-center gap-6 pb-8">
             <Link
-              href="https://github.com"
+              href="https://github.com/tmorse01/diff-slides"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
             >
               <Github className="w-4 h-4" />
               GitHub
             </Link>
             <span className="text-muted-foreground">•</span>
-            <Link href="/docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link
+              href="/docs"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
               Documentation
             </Link>
           </div>
@@ -96,11 +111,15 @@ export function Hero() {
             </div>
             <div className="flex bg-destructive/20 -mx-4 px-4">
               <span className="text-muted-foreground mr-4">2</span>
-              <span className="text-destructive">{"  return price * quantity"}</span>
+              <span className="text-destructive">
+                {"  return price * quantity"}
+              </span>
             </div>
             <div className="flex bg-accent/20 -mx-4 px-4">
               <span className="text-muted-foreground mr-4">3</span>
-              <span className="text-accent">{"  return price * quantity + tax"}</span>
+              <span className="text-accent">
+                {"  return price * quantity + tax"}
+              </span>
             </div>
             <div className="flex">
               <span className="text-muted-foreground mr-4">4</span>
@@ -110,6 +129,5 @@ export function Hero() {
         </div>
       </div>
     </section>
-  )
+  );
 }
-

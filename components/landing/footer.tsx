@@ -4,8 +4,8 @@ import Link from "next/link"
 export function Footer() {
   return (
     <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
-      <div className="container px-4 py-12">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
+      <div className="container px-4 py-12 mx-auto">
+        <div className="grid md:grid-cols-4 gap-8 mb-8 max-w-6xl mx-auto">
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-center gap-4 max-w-6xl mx-auto">
           <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} DiffSlides. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link
