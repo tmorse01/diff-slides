@@ -3,13 +3,12 @@
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Play, Github } from "lucide-react";
 import { DiffCodeIcon } from "@/components/diff-code-icon";
+import { DiffView } from "@/components/editor/diff-view";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export function Hero() {
-  const router = useRouter();
   const [user, setUser] = useState(false);
   const supabase = createClient();
 
@@ -96,36 +95,17 @@ export function Hero() {
 
       {/* Floating code preview */}
       <div className="absolute bottom-20 left-1/2 -translate-x-1/2 w-full max-w-3xl px-4 opacity-40 pointer-events-none">
-        <div className="bg-card/50 backdrop-blur-sm rounded-lg border border-border p-4 shadow-2xl">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-3 h-3 rounded-full bg-destructive" />
-            <div className="w-3 h-3 rounded-full bg-chart-3" />
-            <div className="w-3 h-3 rounded-full bg-accent" />
-          </div>
-          <div className="space-y-2 font-mono text-xs">
-            <div className="flex">
-              <span className="text-muted-foreground mr-4">1</span>
-              <span className="text-foreground">
-                {"function"} calculateTotal() {"{"}
-              </span>
-            </div>
-            <div className="flex bg-destructive/20 -mx-4 px-4">
-              <span className="text-muted-foreground mr-4">2</span>
-              <span className="text-destructive">
-                {"  return price * quantity"}
-              </span>
-            </div>
-            <div className="flex bg-accent/20 -mx-4 px-4">
-              <span className="text-muted-foreground mr-4">3</span>
-              <span className="text-accent">
-                {"  return price * quantity + tax"}
-              </span>
-            </div>
-            <div className="flex">
-              <span className="text-muted-foreground mr-4">4</span>
-              <span className="text-foreground">{"}"}</span>
-            </div>
-          </div>
+        <div className="bg-card/50 backdrop-blur-sm rounded-lg border border-border overflow-hidden shadow-2xl">
+          <DiffView
+            previousCode={`function calculateTotal() {
+  return price * quantity
+}`}
+            currentCode={`function calculateTotal() {
+  return price * quantity + tax
+}`}
+            language="javascript"
+            fileName="calculate.js"
+          />
         </div>
       </div>
     </section>

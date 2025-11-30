@@ -56,7 +56,7 @@ export function Sidebar() {
     },
     {
       title: "Projects",
-      href: "/dashboard",
+      href: "/projects",
       icon: FolderKanban,
     },
   ];
@@ -86,7 +86,7 @@ export function Sidebar() {
             const isActive = pathname === item.href;
             return (
               <Button
-                key={item.href}
+                key={item.title}
                 asChild
                 variant="ghost"
                 size="icon"
@@ -174,7 +174,7 @@ export function Sidebar() {
           const isActive = pathname === item.href;
           return (
             <Button
-              key={item.href}
+              key={item.title}
               asChild
               variant="ghost"
               className={cn(
