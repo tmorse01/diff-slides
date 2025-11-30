@@ -23,9 +23,11 @@ import {
   Wand2,
   FileDown,
 } from "lucide-react";
-import type { Step } from "@/types/database";
+import { ProjectVisibilitySelector } from "@/components/project-visibility-selector";
+import type { Project, Step } from "@/types/database";
 
 interface ActionsPanelProps {
+  project: Project;
   projectSlug: string;
   projectId: string;
   steps: Step[];
@@ -34,6 +36,7 @@ interface ActionsPanelProps {
 }
 
 export function ActionsPanel({
+  project,
   projectSlug,
   projectId,
   steps,
@@ -64,8 +67,8 @@ export function ActionsPanel({
   };
 
   return (
-    <div className="w-80 bg-card border-l border-border flex flex-col">
-      <div className="p-4 border-b border-border">
+    <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden">
+      <div className="p-4 border-b border-border shrink-0">
         <h2 className="text-sm font-semibold text-foreground mb-4">Controls</h2>
 
         <div className="space-y-2">
@@ -86,8 +89,26 @@ export function ActionsPanel({
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
         <div className="p-4 space-y-6">
+          {/* Project Settings */}
+          <Card className="p-4 bg-secondary/30 border-border">
+            <h3 className="text-xs font-semibold text-foreground mb-4">
+              Project Settings
+            </h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">
+                  Visibility
+                </Label>
+                <ProjectVisibilitySelector project={project} />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Control who can view this project
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {/* Step Settings */}
           <Card className="p-4 bg-secondary/30 border-border">
             <h3 className="text-xs font-semibold text-foreground mb-4">

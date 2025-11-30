@@ -44,6 +44,7 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
           onAddStep={addStep}
           onDuplicateStep={duplicateStep}
           onDeleteStep={deleteStep}
+          projectSlug={project.slug}
         />
         <StepEditor
           step={selectedStep}
@@ -65,6 +66,7 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
           isSaving={isSaving}
         />
         <ActionsPanel
+          project={project}
           projectSlug={project.slug}
           projectId={project.id}
           steps={steps}

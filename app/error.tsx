@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Lock } from "lucide-react";
 
 export default function Error({
   error,
@@ -22,11 +23,19 @@ export default function Error({
     console.error(error);
   }, [error]);
 
+  const isUnauthorized = 
+    error.name === "UnauthorizedError" ||
+    error.message?.toLowerCase().includes("permission") ||
+    error.message?.toLowerCase().includes("unauthorized");
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="max-w-md">
         <CardHeader>
-          <CardTitle>Something went wrong!</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            {isUnauthorized && <Lock className="h-5 w-5" />}
+            {isUnauthorized ? "Access Denied" : "Something went wrong!"}
+          </CardTitle>
           <CardDescription>
             {error.message || "An unexpected error occurred"}
           </CardDescription>

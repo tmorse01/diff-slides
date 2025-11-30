@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, GripVertical, Trash2 } from "lucide-react";
+import { Plus, GripVertical, Trash2, ArrowLeft } from "lucide-react";
 import { computeDiff } from "@/lib/diff";
 import type { Step } from "@/types/database";
 
@@ -14,6 +15,7 @@ interface StepsSidebarProps {
   onAddStep: () => void;
   onDuplicateStep: (stepId: string) => void;
   onDeleteStep: (stepId: string) => void;
+  projectSlug: string;
 }
 
 export function StepsSidebar({
@@ -23,6 +25,7 @@ export function StepsSidebar({
   onAddStep,
   onDuplicateStep,
   onDeleteStep,
+  projectSlug,
 }: StepsSidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -58,8 +61,15 @@ export function StepsSidebar({
   return (
     <div className="w-80 bg-card border-r border-border flex flex-col">
       <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-foreground">Timeline</h2>
+        <div className="flex items-center gap-2 mb-4">
+          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+            <Link href={`/projects/${projectSlug}`}>
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <h2 className="text-sm font-semibold text-foreground flex-1">
+            Project
+          </h2>
           <Button
             size="sm"
             variant="outline"

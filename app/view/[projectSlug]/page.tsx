@@ -1,5 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
+import { getSessionId } from "@/lib/session";
 import { NotFoundError, UnauthorizedError } from "@/lib/errors";
 import { Viewer } from "@/components/viewer/viewer";
 import { Navbar } from "@/components/navbar";
@@ -13,41 +14,62 @@ export default async function ViewProjectPage({
   searchParams: Promise<{ stepIndex?: string }> | { stepIndex?: string };
 }) {
   const user = await getUser();
-  const supabase = await createClient();
+  const sessionId = await getSessionId();
+  const adminClient = createAdminClient();
   const resolvedParams = params instanceof Promise ? await params : params;
   const resolvedSearchParams =
     searchParams instanceof Promise ? await searchParams : searchParams;
   const { projectSlug } = resolvedParams;
   const { stepIndex } = resolvedSearchParams;
 
-  const { data: project, error } = await supabase
+  // Use admin client to fetch project (bypasses RLS)
+  // This allows us to access temporary projects
+  const { data: projects, error } = await adminClient
     .from("projects")
     .select("*")
-    .eq("slug", projectSlug)
-    .single();
+    .eq("slug", projectSlug);
 
-  if (error || !project) {
+  if (error || !projects || projects.length === 0) {
     throw new NotFoundError("Project not found");
   }
 
-  const typedProject = project as Project;
+  // Find the project the user has access to
+  let project: Project | null = null;
+  for (const p of projects) {
+    const typedP = p as Project;
+    
+    // Check if user owns it
+    if (user && typedP.user_id === user.id) {
+      project = typedP;
+      break;
+    }
+    
+    // Check if session matches (for temporary projects)
+    if (sessionId && typedP.session_id === sessionId) {
+      project = typedP;
+      break;
+    }
+    
+    // Check if it's public/unlisted (anyone can view)
+    if (
+      typedP.visibility === "public" ||
+      typedP.visibility === "unlisted"
+    ) {
+      project = typedP;
+      break;
+    }
+  }
 
-  // Check visibility
-  const isOwner = user && typedProject.user_id === user.id;
-  const isPublic =
-    typedProject.visibility === "public" ||
-    typedProject.visibility === "unlisted";
-
-  if (!isOwner && !isPublic) {
+  if (!project) {
     throw new UnauthorizedError(
       "You don't have permission to view this project"
     );
   }
 
-  const { data: steps } = await supabase
+  const { data: steps } = await adminClient
     .from("steps")
     .select("*")
-    .eq("project_id", typedProject.id)
+    .eq("project_id", project.id)
     .order("index", { ascending: true });
 
   const typedSteps = (steps || []) as Step[];
