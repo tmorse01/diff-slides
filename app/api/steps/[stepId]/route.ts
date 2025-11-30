@@ -61,13 +61,14 @@ export async function PATCH(
       updated_at: new Date().toISOString(),
     } as Partial<Step>;
 
+    // Type assertion needed due to Supabase TypeScript inference limitation
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
+    const { data, error } = await (supabase as any)
       .from("steps")
-      .update(updateData as any)
+      .update(updateData)
       .eq("id", stepId)
       .select()
-      .single() as any);
+      .single();
 
     if (error) {
       return createErrorResponse(error);
@@ -116,11 +117,12 @@ export async function DELETE(
       >[];
       // Update each step's index
       for (const stepToUpdate of typedStepsToReorder) {
+        // Type assertion needed due to Supabase TypeScript inference limitation
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase
+        await (supabase as any)
           .from("steps")
-          .update({ index: stepToUpdate.index - 1 } as any)
-          .eq("id", stepToUpdate.id) as any);
+          .update({ index: stepToUpdate.index - 1 })
+          .eq("id", stepToUpdate.id);
       }
     }
 

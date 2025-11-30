@@ -8,7 +8,7 @@ import {
 } from "@/lib/errors";
 import { requireAuth } from "@/lib/auth";
 import { NextRequest } from "next/server";
-import type { Project, Database } from "@/types/database";
+import type { Project, ProjectUpdate, Database } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 async function getProjectAndVerifyOwnership(
@@ -43,7 +43,7 @@ export async function PATCH(
 ) {
   try {
     const user = await requireAuth();
-    const supabase = await createClient();
+    const supabase: SupabaseClient<Database> = await createClient();
     const resolvedParams = params instanceof Promise ? await params : params;
     const { projectId } = resolvedParams;
 
@@ -52,9 +52,9 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateProjectSchema.parse(body);
 
-    const updateData: Partial<Project> = {
+    const updateData: ProjectUpdate = {
       ...validatedData,
-    } as Partial<Project>;
+    };
 
     // If name is being updated, regenerate slug
     if (validatedData.name) {
@@ -69,13 +69,14 @@ export async function PATCH(
 
     updateData.updated_at = new Date().toISOString();
 
+    // Type assertion needed due to Supabase TypeScript inference limitation
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase
+    const { data, error } = await (supabase as any)
       .from("projects")
-      .update(updateData as any)
+      .update(updateData)
       .eq("id", projectId)
       .select()
-      .single() as any);
+      .single();
 
     if (error) {
       return createErrorResponse(error);
