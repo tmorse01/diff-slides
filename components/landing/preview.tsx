@@ -99,7 +99,7 @@ export function Preview() {
             </div>
 
             {/* Step navigation at the bottom */}
-            <div className="bg-secondary border-t border-border px-6 py-4 flex items-center justify-between flex-shrink-0">
+            <div className="bg-secondary border-t border-border px-6 py-4 flex items-center justify-between shrink-0">
               <Button
                 onClick={prevStep}
                 disabled={currentStepIndex === 0}

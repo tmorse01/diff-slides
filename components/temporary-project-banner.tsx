@@ -8,7 +8,7 @@ export function TemporaryProjectBanner() {
   return (
     <div className="m-4 p-2.5 border border-yellow-500/50 bg-yellow-500/10 rounded-lg">
       <div className="flex items-center gap-2.5">
-        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+        <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 shrink-0" />
         <div className="flex-1 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-yellow-800 dark:text-yellow-200">

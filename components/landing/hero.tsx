@@ -23,7 +23,7 @@ export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,oklch(0.22_0_0)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.22_0_0)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,oklch(0.22_0_0)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.22_0_0)_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
 
       <div className="container relative z-10 px-4 py-32">
         <div className="mx-auto max-w-5xl text-center space-y-8">
@@ -38,7 +38,7 @@ export function Hero() {
           {/* Main heading */}
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-balance">
             Explain code by{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-accent to-chart-3">
+            <span className="bg-clip-text text-transparent bg-linear-to-r from-accent to-chart-3">
               highlighting how it changes
             </span>
           </h1>
@@ -77,11 +77,17 @@ export function Hero() {
           {!user && (
             <p className="text-sm text-muted-foreground text-center pt-2">
               No account required to get started.{" "}
-              <Link href="/projects/new" className="text-primary hover:underline">
+              <Link
+                href="/projects/new"
+                className="text-primary hover:underline"
+              >
                 Create your first project
               </Link>{" "}
               or{" "}
-              <Link href="/auth/register" className="text-primary hover:underline">
+              <Link
+                href="/auth/register"
+                className="text-primary hover:underline"
+              >
                 sign up
               </Link>{" "}
               to save permanently.

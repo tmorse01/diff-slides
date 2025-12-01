@@ -48,7 +48,7 @@ export function FrostedGlassCard({
 
       {/* Frosted glass effect overlay */}
       <div
-        className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent pointer-events-none"
+        className="absolute inset-0 bg-linear-to-br from-black/40 to-transparent pointer-events-none"
         style={{ zIndex: 2 }}
       />
 
