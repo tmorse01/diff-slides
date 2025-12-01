@@ -68,7 +68,7 @@ export function ActionsPanel({
     }
   };
 
-  const handleExportGif = async () => {
+  const handleExport = async () => {
     if (steps.length === 0) {
       toast({
         title: "No steps to export",
@@ -85,8 +85,9 @@ export function ActionsPanel({
         duration: duration.toString(),
       });
 
+      const format = exportFormat === "mp4" ? "mp4" : "gif";
       const response = await fetch(
-        `/api/projects/${projectId}/export/gif?${params.toString()}`,
+        `/api/projects/${projectId}/export/${format}?${params.toString()}`,
         {
           method: "GET",
         }
@@ -94,9 +95,9 @@ export function ActionsPanel({
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({
-          error: "Failed to export GIF",
+          error: `Failed to export ${format.toUpperCase()}`,
         }));
-        throw new Error(error.error || "Failed to export GIF");
+        throw new Error(error.error || `Failed to export ${format.toUpperCase()}`);
       }
 
       // Get the blob and trigger download
@@ -104,7 +105,7 @@ export function ActionsPanel({
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${projectSlug}-export.gif`;
+      a.download = `${projectSlug}-export.${format}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -112,7 +113,7 @@ export function ActionsPanel({
 
       toast({
         title: "Export successful",
-        description: "Your GIF has been downloaded.",
+        description: `Your ${format.toUpperCase()} has been downloaded.`,
       });
     } catch (error) {
       console.error("Export error:", error);
@@ -121,7 +122,7 @@ export function ActionsPanel({
         description:
           error instanceof Error
             ? error.message
-            : "An error occurred while exporting the GIF.",
+            : `An error occurred while exporting the ${exportFormat.toUpperCase()}.`,
         variant: "destructive",
       });
     } finally {
@@ -321,34 +322,22 @@ export function ActionsPanel({
               variant="outline"
               className="w-full gap-2 justify-start bg-transparent"
               size="sm"
-              disabled
-              title="Coming soon"
-            >
-              <Video className="w-4 h-4" />
-              Export MP4
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full gap-2 justify-start bg-transparent"
-              size="sm"
-              onClick={handleExportGif}
-              disabled={
-                isExporting ||
-                steps.length === 0 ||
-                exportFormat !== "gif"
-              }
+              onClick={handleExport}
+              disabled={isExporting || steps.length === 0}
               title={
-                exportFormat !== "gif"
-                  ? "Select GIF format to export"
-                  : steps.length === 0
+                steps.length === 0
                   ? "Add at least one step to export"
                   : isExporting
                   ? "Exporting..."
-                  : "Export as animated GIF"
+                  : `Export as ${exportFormat === "mp4" ? "MP4 video" : "animated GIF"}`
               }
             >
-              <ImageIcon className="w-4 h-4" />
-              {isExporting ? "Exporting..." : "Export GIF"}
+              {exportFormat === "mp4" ? (
+                <Video className="w-4 h-4" />
+              ) : (
+                <ImageIcon className="w-4 h-4" />
+              )}
+              {isExporting ? "Exporting..." : "Export"}
             </Button>
           </div>
         </div>

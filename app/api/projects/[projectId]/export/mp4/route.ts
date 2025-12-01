@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { verifyProjectAccess } from "@/lib/project-access";
 import { ValidationError } from "@/lib/errors";
 import { StepsService } from "@/lib/services/steps.service";
-import { exportProjectAsGif } from "@/lib/export";
+import { exportProjectAsMp4 } from "@/lib/export";
 import { verifyApiKey, getApiKeyFromRequest } from "@/lib/api-key";
 import { ProjectsService } from "@/lib/services/projects.service";
 
@@ -84,8 +84,8 @@ export async function GET(
       })
       .filter((cookie) => cookie.name && cookie.value);
 
-    // Export as GIF with timeout
-    const exportPromise = exportProjectAsGif(project.slug, steps, baseUrl, {
+    // Export as MP4 with timeout
+    const exportPromise = exportProjectAsMp4(project.slug, steps, baseUrl, {
       frameDelay: duration,
       width,
       height,
@@ -106,26 +106,26 @@ export async function GET(
       )
     );
 
-    const gifBuffer = await Promise.race([exportPromise, timeoutPromise]);
+    const mp4Buffer = await Promise.race([exportPromise, timeoutPromise]);
 
-    // Return GIF file
-    return new Response(gifBuffer as unknown as BodyInit, {
+    // Return MP4 file
+    return new Response(mp4Buffer as unknown as BodyInit, {
       headers: {
-        "Content-Type": "image/gif",
-        "Content-Disposition": `attachment; filename="${project.slug}-export.gif"`,
-        "Content-Length": gifBuffer.length.toString(),
+        "Content-Type": "video/mp4",
+        "Content-Disposition": `attachment; filename="${project.slug}-export.mp4"`,
+        "Content-Length": mp4Buffer.length.toString(),
       },
     });
   } catch (error) {
     // Log technical error details on server
-    console.error("[GIF Export API] Technical error:", error);
+    console.error("[MP4 Export API] Technical error:", error);
     if (error instanceof Error) {
-      console.error("[GIF Export API] Error message:", error.message);
-      console.error("[GIF Export API] Error stack:", error.stack);
+      console.error("[MP4 Export API] Error message:", error.message);
+      console.error("[MP4 Export API] Error stack:", error.stack);
     }
 
     // Return user-friendly error message
-    let userMessage = "Failed to export GIF. Please try again.";
+    let userMessage = "Failed to export MP4. Please try again.";
     let statusCode = 500;
     let technicalDetails: string | undefined = undefined;
 
@@ -155,8 +155,7 @@ export async function GET(
         statusCode = 500;
       } else if (
         errorMessage.includes("ffmpeg") ||
-        errorMessage.includes("mp4") ||
-        errorMessage.includes("gif")
+        errorMessage.includes("mp4")
       ) {
         userMessage =
           "Failed to process the video. Please ensure ffmpeg is installed and try again.";
@@ -187,3 +186,4 @@ export async function GET(
     );
   }
 }
+
