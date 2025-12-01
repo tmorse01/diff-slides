@@ -70,8 +70,6 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
           projectSlug={project.slug}
           projectId={project.id}
           steps={steps}
-          selectedStepId={selectedStepId}
-          onDuplicateStep={duplicateStep}
         />
       </div>
     </div>

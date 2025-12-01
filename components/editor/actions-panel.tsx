@@ -20,9 +20,14 @@ import {
   Copy,
   Video,
   Image as ImageIcon,
-  Wand2,
-  FileDown,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { ProjectVisibilitySelector } from "@/components/project-visibility-selector";
 import type { Project, Step } from "@/types/database";
 
@@ -31,8 +36,6 @@ interface ActionsPanelProps {
   projectSlug: string;
   projectId: string;
   steps: Step[];
-  selectedStepId: string | null;
-  onDuplicateStep: (stepId: string) => void;
 }
 
 export function ActionsPanel({
@@ -40,8 +43,6 @@ export function ActionsPanel({
   projectSlug,
   projectId,
   steps,
-  selectedStepId,
-  onDuplicateStep,
 }: ActionsPanelProps) {
   const [duration, setDuration] = useState(3);
   const [showAdditions, setShowAdditions] = useState(true);
@@ -60,12 +61,6 @@ export function ActionsPanel({
       title: "Copied to clipboard",
       description: "JSON data has been copied to your clipboard.",
     });
-  };
-
-  const handleDuplicate = () => {
-    if (selectedStepId) {
-      onDuplicateStep(selectedStepId);
-    }
   };
 
   const handleExport = async () => {
@@ -97,7 +92,9 @@ export function ActionsPanel({
         const error = await response.json().catch(() => ({
           error: `Failed to export ${format.toUpperCase()}`,
         }));
-        throw new Error(error.error || `Failed to export ${format.toUpperCase()}`);
+        throw new Error(
+          error.error || `Failed to export ${format.toUpperCase()}`
+        );
       }
 
       // Get the blob and trigger download
@@ -131,30 +128,132 @@ export function ActionsPanel({
   };
 
   return (
-    <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden">
+    <div className="w-80 bg-card border-l border-border flex flex-col overflow-hidden relative">
+      {/* Loading Bar */}
+      {isExporting && (
+        <div className="absolute top-0 left-0 right-0 h-1 bg-muted overflow-hidden z-10">
+          <div className="h-full bg-primary animate-progress" />
+        </div>
+      )}
       <div className="p-4 border-b border-border shrink-0">
         <h2 className="text-sm font-semibold text-foreground mb-4">Controls</h2>
 
-        <div className="space-y-2">
-          <Button className="w-full gap-2 bg-accent text-accent-foreground hover:bg-accent/90">
-            <Wand2 className="w-4 h-4" />
-            Generate Slides
-          </Button>
-          <Button
-            className="w-full"
-            variant="default"
-            onClick={() => {
-              window.open(`/view/${projectSlug}`, "_blank");
-            }}
-          >
-            <ExternalLink className="mr-2 h-4 w-4" />
-            Preview Playback
-          </Button>
+        <div className="flex gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="default"
+                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => {
+                  window.open(`/view/${projectSlug}`, "_blank");
+                }}
+              >
+                Preview
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Preview Playback</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex-1">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleExport}
+                  disabled={isExporting || steps.length === 0}
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : exportFormat === "mp4" ? (
+                    <Video className="h-4 w-4" />
+                  ) : (
+                    <ImageIcon className="h-4 w-4" />
+                  )}
+                  {isExporting ? "Exporting" : "Export"}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {steps.length === 0
+                  ? "Add at least one step to export"
+                  : isExporting
+                  ? "Exporting..."
+                  : `Export as ${
+                      exportFormat === "mp4" ? "MP4 video" : "animated GIF"
+                    }`}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="shrink-0 opacity-50 cursor-not-allowed"
+                  disabled
+                >
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-xs">
+              <p>
+                Coming soon: Auto-generate steps from code snippets. AI will
+                analyze your code and create incremental steps showing the
+                progression of changes.
+              </p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
       <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
         <div className="p-4 space-y-6">
+          {/* Export Format */}
+          <Card className="p-4 bg-secondary/30 border-border">
+            <h3 className="text-xs font-semibold text-foreground mb-4">
+              Export Format
+            </h3>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="format"
+                  className="text-xs text-muted-foreground"
+                >
+                  Format
+                </Label>
+                <Select value={exportFormat} onValueChange={setExportFormat}>
+                  <SelectTrigger id="format" className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mp4">MP4 Video</SelectItem>
+                    <SelectItem value="gif">Animated GIF</SelectItem>
+                    <SelectItem value="pdf">PDF Slides</SelectItem>
+                    <SelectItem value="html">HTML Embed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full gap-2 justify-start bg-transparent"
+                size="sm"
+                onClick={handleCopyJSON}
+              >
+                <Copy className="w-4 h-4" />
+                Copy JSON
+              </Button>
+            </div>
+          </Card>
+
           {/* Project Settings */}
           <Card className="p-4 bg-secondary/30 border-border">
             <h3 className="text-xs font-semibold text-foreground mb-4">
@@ -272,74 +371,6 @@ export function ActionsPanel({
               </div>
             </div>
           </Card>
-
-          {/* Export Format */}
-          <Card className="p-4 bg-secondary/30 border-border">
-            <h3 className="text-xs font-semibold text-foreground mb-4">
-              Export Format
-            </h3>
-
-            <div className="space-y-2">
-              <Label htmlFor="format" className="text-xs text-muted-foreground">
-                Format
-              </Label>
-              <Select value={exportFormat} onValueChange={setExportFormat}>
-                <SelectTrigger id="format" className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mp4">MP4 Video</SelectItem>
-                  <SelectItem value="gif">Animated GIF</SelectItem>
-                  <SelectItem value="pdf">PDF Slides</SelectItem>
-                  <SelectItem value="html">HTML Embed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </Card>
-
-          {/* Actions */}
-          <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full gap-2 justify-start bg-transparent"
-              size="sm"
-              onClick={handleDuplicate}
-              disabled={!selectedStepId}
-            >
-              <Copy className="w-4 h-4" />
-              Duplicate Step
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full gap-2 justify-start bg-transparent"
-              size="sm"
-              onClick={handleCopyJSON}
-            >
-              <Copy className="w-4 h-4" />
-              Copy JSON
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full gap-2 justify-start bg-transparent"
-              size="sm"
-              onClick={handleExport}
-              disabled={isExporting || steps.length === 0}
-              title={
-                steps.length === 0
-                  ? "Add at least one step to export"
-                  : isExporting
-                  ? "Exporting..."
-                  : `Export as ${exportFormat === "mp4" ? "MP4 video" : "animated GIF"}`
-              }
-            >
-              {exportFormat === "mp4" ? (
-                <Video className="w-4 h-4" />
-              ) : (
-                <ImageIcon className="w-4 h-4" />
-              )}
-              {isExporting ? "Exporting..." : "Export"}
-            </Button>
-          </div>
         </div>
       </ScrollArea>
     </div>

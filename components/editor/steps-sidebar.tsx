@@ -4,8 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, GripVertical, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, GripVertical, Trash2, ArrowLeft, Copy } from "lucide-react";
 import { computeDiff } from "@/lib/diff";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import type { Step } from "@/types/database";
 
 interface StepsSidebarProps {
@@ -62,11 +67,18 @@ export function StepsSidebar({
     <div className="w-80 bg-card border-r border-border flex flex-col">
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-2 mb-4">
-          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-            <Link href={`/projects/${projectSlug}`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                <Link href={`/projects/${projectSlug}`}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Back to project</p>
+            </TooltipContent>
+          </Tooltip>
           <h2 className="text-sm font-semibold text-foreground flex-1">
             Project
           </h2>
@@ -101,7 +113,16 @@ export function StepsSidebar({
                   className="w-full text-left"
                 >
                   <div className="flex items-start gap-2">
-                    <GripVertical className="w-4 h-4 text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="shrink-0">
+                          <GripVertical className="w-4 h-4 text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        <p>Drag to reorder</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-mono text-muted-foreground">
@@ -139,17 +160,42 @@ export function StepsSidebar({
                     </div>
                   </div>
                 </button>
-                {steps.length > 1 && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteStep(step.id);
-                    }}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-destructive/10 rounded"
-                  >
-                    <Trash2 className="w-3 h-3 text-destructive" />
-                  </button>
-                )}
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDuplicateStep(step.id);
+                        }}
+                        className="p-1 hover:bg-accent/10 rounded"
+                      >
+                        <Copy className="w-3 h-3 text-muted-foreground" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                      <p>Duplicate step</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  {steps.length > 1 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteStep(step.id);
+                          }}
+                          className="p-1 hover:bg-destructive/10 rounded"
+                        >
+                          <Trash2 className="w-3 h-3 text-destructive" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p>Delete step</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </div>
             );
           })}

@@ -56,12 +56,13 @@ export async function exportProjectAsGif(
       "[GIF Export]"
     );
 
-    // Calculate frame rate - use a reasonable fps (10) for smooth animation
-    // The frame delay option determines how long each frame is shown in the final GIF
-    // For MP4 creation, we use a standard frame rate, then adjust timing in GIF conversion
+    // options.frameDelay is the duration PER FRAME (in seconds)
+    // Total duration = number of frames * frameDelay per frame
+    const frameDelayPerFrame = options.frameDelay;
+    const totalDuration = framePaths.length * frameDelayPerFrame;
     const frameRate = 10; // Use 10 fps for MP4 creation (smooth but not too large)
     console.log(
-      `[GIF Export] Frame rate: ${frameRate} fps (frame delay: ${options.frameDelay}s)`
+      `[GIF Export] Frame delay: ${frameDelayPerFrame}s per frame, Frames: ${framePaths.length}, Total duration: ${totalDuration}s, Frame rate: ${frameRate} fps`
     );
 
     // Get dimensions from first frame (we'll read it to get actual size)
@@ -85,7 +86,14 @@ export async function exportProjectAsGif(
     );
     const mp4Start = Date.now();
     mp4Path = join(tempDir, "output.mp4");
-    await createMp4FromFrames(framePaths, mp4Path, frameRate, width, height);
+    await createMp4FromFrames(
+      framePaths,
+      mp4Path,
+      frameRate,
+      width,
+      height,
+      frameDelayPerFrame
+    );
     console.log(`[GIF Export] MP4 created in ${Date.now() - mp4Start}ms`);
 
     // Convert MP4 to GIF
