@@ -1,6 +1,6 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionId, clearSessionId } from "@/lib/session";
-import type { Project } from "@/types/database";
+import { ProjectsService } from "@/lib/services/projects.service";
+import type { ProjectUpdate } from "@/types/database";
 
 /**
  * Migrate temporary projects (session-based) to a user account
@@ -10,76 +10,53 @@ export async function migrateTemporaryProjectsToUser(
   userId: string
 ): Promise<number> {
   const sessionId = await getSessionId();
-  
+
   if (!sessionId) {
     return 0; // No temporary projects to migrate
   }
 
-  const adminClient = createAdminClient();
+  // Find all temporary projects for this session using typed service
+  const temporaryProjects = await ProjectsService.getTemporaryBySessionId(
+    sessionId
+  );
 
-  // Find all temporary projects for this session
-  const { data: temporaryProjects, error } = await adminClient
-    .from("projects")
-    .select("*")
-    .eq("session_id", sessionId)
-    .is("user_id", null);
-
-  if (error || !temporaryProjects || temporaryProjects.length === 0) {
+  if (temporaryProjects.length === 0) {
     return 0;
   }
-
-  const typedProjects = temporaryProjects as Project[];
 
   // Update each project to associate with the user
   // We need to handle slug conflicts - if a slug already exists for the user,
   // we'll append a suffix
   let migratedCount = 0;
 
-  for (const project of typedProjects) {
+  for (const project of temporaryProjects) {
     // Check if slug already exists for this user
-    const { data: existingProject } = await adminClient
-      .from("projects")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("slug", project.slug)
-      .single();
+    const userSlugs = await ProjectsService.getSlugsByUserId(userId);
 
     let finalSlug = project.slug;
-    if (existingProject) {
+    if (userSlugs.includes(project.slug)) {
       // Slug conflict - append a suffix
       let counter = 1;
-      let conflictExists = true;
-      while (conflictExists) {
-        const testSlug = `${project.slug}-${counter}`;
-        const { data: testProject } = await adminClient
-          .from("projects")
-          .select("id")
-          .eq("user_id", userId)
-          .eq("slug", testSlug)
-          .single();
-        
-        if (!testProject) {
-          finalSlug = testSlug;
-          conflictExists = false;
-        } else {
-          counter++;
-        }
+      while (userSlugs.includes(`${project.slug}-${counter}`)) {
+        counter++;
       }
+      finalSlug = `${project.slug}-${counter}`;
     }
 
-    // Update the project
-    const { error: updateError } = await adminClient
-      .from("projects")
-      .update({
-        user_id: userId,
-        session_id: null,
-        slug: finalSlug,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", project.id);
+    // Update the project using typed service
+    const updateData: ProjectUpdate = {
+      user_id: userId,
+      session_id: null,
+      slug: finalSlug,
+      updated_at: new Date().toISOString(),
+    };
 
-    if (!updateError) {
+    try {
+      await ProjectsService.update(project.id, updateData, true);
       migratedCount++;
+    } catch (error) {
+      // Log error but continue with other projects
+      console.error(`Failed to migrate project ${project.id}:`, error);
     }
   }
 
@@ -90,4 +67,3 @@ export async function migrateTemporaryProjectsToUser(
 
   return migratedCount;
 }
-

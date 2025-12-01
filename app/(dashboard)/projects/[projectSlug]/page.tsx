@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,8 @@ import { NotFoundError, UnauthorizedError } from "@/lib/errors";
 import { ArrowLeft, Edit, Eye, Calendar, FileCode } from "lucide-react";
 import { ProjectVisibilitySelector } from "@/components/project-visibility-selector";
 import { format } from "date-fns";
-import type { Project, Step } from "@/types/database";
+import { ProjectsService } from "@/lib/services/projects.service";
+import { StepsService } from "@/lib/services/steps.service";
 
 export default async function ProjectPage({
   params,
@@ -17,27 +17,15 @@ export default async function ProjectPage({
   params: Promise<{ projectSlug: string }> | { projectSlug: string };
 }) {
   const user = await requireAuth();
-  const supabase = await createClient();
   const resolvedParams = params instanceof Promise ? await params : params;
   const { projectSlug } = resolvedParams;
 
-  const { data: project, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("slug", projectSlug)
-    .single();
-
-  if (error || !project) {
-    throw new NotFoundError("Project not found");
-  }
-
-  const typedProject = project as Project;
+  const project = await ProjectsService.getBySlugSingle(projectSlug);
 
   // Check if user owns the project or if it's public/unlisted
-  const isOwner = typedProject.user_id === user.id;
+  const isOwner = project.user_id === user.id;
   const isPublic =
-    typedProject.visibility === "public" ||
-    typedProject.visibility === "unlisted";
+    project.visibility === "public" || project.visibility === "unlisted";
 
   if (!isOwner && !isPublic) {
     throw new UnauthorizedError(
@@ -45,13 +33,7 @@ export default async function ProjectPage({
     );
   }
 
-  const { data: steps } = await supabase
-    .from("steps")
-    .select("*")
-    .eq("project_id", typedProject.id)
-    .order("index", { ascending: true });
-
-  const typedSteps = (steps || []) as Step[];
+  const steps = await StepsService.getByProjectId(project.id);
 
   return (
     <div className="h-full overflow-y-auto bg-background">
@@ -70,19 +52,19 @@ export default async function ProjectPage({
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
                 <h1 className="text-4xl font-bold tracking-tight">
-                  {typedProject.name}
+                  {project.name}
                 </h1>
                 {isOwner ? (
-                  <ProjectVisibilitySelector project={typedProject} />
+                  <ProjectVisibilitySelector project={project} />
                 ) : (
                   <Badge variant="outline" className="capitalize text-sm">
-                    {typedProject.visibility}
+                    {project.visibility}
                   </Badge>
                 )}
               </div>
-              {typedProject.description && (
+              {project.description && (
                 <p className="text-lg text-muted-foreground mb-4">
-                  {typedProject.description}
+                  {project.description}
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -90,28 +72,27 @@ export default async function ProjectPage({
                   <Calendar className="h-4 w-4" />
                   <span>
                     Updated{" "}
-                    {format(new Date(typedProject.updated_at), "MMM d, yyyy")}
+                    {format(new Date(project.updated_at), "MMM d, yyyy")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FileCode className="h-4 w-4" />
                   <span>
-                    {typedSteps.length}{" "}
-                    {typedSteps.length === 1 ? "step" : "steps"}
+                    {steps.length} {steps.length === 1 ? "step" : "steps"}
                   </span>
                 </div>
               </div>
             </div>
             <div className="flex gap-3">
               <Button asChild variant="outline" size="lg">
-                <Link href={`/view/${typedProject.slug}`}>
+                <Link href={`/view/${project.slug}`}>
                   <Eye className="mr-2 h-4 w-4" />
                   View Project
                 </Link>
               </Button>
               {isOwner && (
                 <Button asChild size="lg">
-                  <Link href={`/projects/${typedProject.slug}/edit`}>
+                  <Link href={`/projects/${project.slug}/edit`}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Project
                   </Link>
@@ -128,13 +109,13 @@ export default async function ProjectPage({
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold">Steps</h2>
             <Badge variant="secondary" className="text-sm">
-              {typedSteps.length} {typedSteps.length === 1 ? "step" : "steps"}
+              {steps.length} {steps.length === 1 ? "step" : "steps"}
             </Badge>
           </div>
 
-          {typedSteps.length > 0 ? (
+          {steps.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {typedSteps.map((step) => (
+              {steps.map((step) => (
                 <Card
                   key={step.id}
                   className="hover:shadow-md transition-shadow border-border/50"
@@ -183,7 +164,7 @@ export default async function ProjectPage({
                 </p>
                 {isOwner && (
                   <Button asChild>
-                    <Link href={`/projects/${typedProject.slug}/edit`}>
+                    <Link href={`/projects/${project.slug}/edit`}>
                       <Edit className="mr-2 h-4 w-4" />
                       Add Your First Step
                     </Link>

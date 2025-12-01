@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
 import {
   Card,
@@ -13,23 +12,13 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ProjectActions } from "@/components/project-actions";
-import type { Project } from "@/types/database";
+import { ProjectsService } from "@/lib/services/projects.service";
 
 export default async function ProjectsPage() {
   const user = await requireAuth();
-  const supabase = await createClient();
 
-  const { data: projects, error } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("updated_at", { ascending: false });
-
-  if (error) {
-    return <div>Error loading projects</div>;
-  }
-
-  const typedProjects = (projects || []) as Project[];
+  // Get projects using typed service
+  const projects = await ProjectsService.getByUserId(user.id);
 
   return (
     <div className="h-full overflow-y-auto">
@@ -49,7 +38,7 @@ export default async function ProjectsPage() {
           </Button>
         </div>
 
-        {projects && projects.length === 0 ? (
+        {projects.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-muted-foreground mb-4">No projects yet</p>
@@ -60,7 +49,7 @@ export default async function ProjectsPage() {
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {typedProjects.map((project) => (
+            {projects.map((project) => (
               <Card key={project.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">

@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createProjectSchema } from "@/lib/validations";
 import { generateSlug, ensureUniqueSlug } from "@/lib/slug";
 import { createErrorResponse } from "@/lib/errors";
 import { getUser } from "@/lib/auth";
 import { getOrCreateSessionId } from "@/lib/session";
 import { NextRequest } from "next/server";
+import { ProjectsService } from "@/lib/services/projects.service";
 import type { ProjectInsert } from "@/types/database";
 
 export async function POST(request: NextRequest) {
@@ -15,10 +15,6 @@ export async function POST(request: NextRequest) {
     const validatedData = createProjectSchema.parse(body);
 
     const slug = generateSlug(validatedData.name);
-
-    // Use admin client for temporary projects (bypasses RLS)
-    // We'll verify session_id in application code
-    const adminClient = createAdminClient();
 
     if (user) {
       // Authenticated user - use regular client with RLS
@@ -33,35 +29,24 @@ export async function POST(request: NextRequest) {
         visibility: validatedData.visibility || "private",
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase
-        .from("projects")
-        .insert(projectData as any)
-        .select()
-        .single() as any);
+      // Use typed service to create
+      const newProject = await ProjectsService.create(projectData, false);
 
-      if (error) {
-        return createErrorResponse(error);
-      }
-
-      return Response.json(data, { status: 201 });
+      return Response.json(newProject, { status: 201 });
     } else {
       // Temporary project - use session_id
       const sessionId = await getOrCreateSessionId();
 
       // For temporary projects, we need to check uniqueness within the session
-      // Since we're using admin client, we can query directly
-      const { data: existingProjects } = await adminClient
-        .from("projects")
-        .select("slug")
-        .eq("session_id", sessionId)
-        .eq("slug", slug);
+      const existingSlugs = await ProjectsService.getSlugsBySessionId(
+        sessionId
+      );
 
       let uniqueSlug = slug;
-      if (existingProjects && existingProjects.length > 0) {
+      if (existingSlugs.includes(slug)) {
         // Add a suffix to make it unique
         let counter = 1;
-        while (existingProjects.some((p) => p.slug === `${slug}-${counter}`)) {
+        while (existingSlugs.includes(`${slug}-${counter}`)) {
           counter++;
         }
         uniqueSlug = `${slug}-${counter}`;
@@ -76,18 +61,10 @@ export async function POST(request: NextRequest) {
         visibility: validatedData.visibility || "private",
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (adminClient
-        .from("projects")
-        .insert(projectData as any)
-        .select()
-        .single() as any);
+      // Use typed service to create
+      const newProject = await ProjectsService.create(projectData, true);
 
-      if (error) {
-        return createErrorResponse(error);
-      }
-
-      return Response.json(data, { status: 201 });
+      return Response.json(newProject, { status: 201 });
     }
   } catch (error) {
     return createErrorResponse(error);

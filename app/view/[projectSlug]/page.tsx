@@ -1,10 +1,10 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
 import { getSessionId } from "@/lib/session";
 import { NotFoundError, UnauthorizedError } from "@/lib/errors";
 import { Viewer } from "@/components/viewer/viewer";
 import { Navbar } from "@/components/navbar";
-import type { Project, Step } from "@/types/database";
+import { ProjectsService } from "@/lib/services/projects.service";
+import { StepsService } from "@/lib/services/steps.service";
 
 export default async function ViewProjectPage({
   params,
@@ -15,47 +15,37 @@ export default async function ViewProjectPage({
 }) {
   const user = await getUser();
   const sessionId = await getSessionId();
-  const adminClient = createAdminClient();
   const resolvedParams = params instanceof Promise ? await params : params;
   const resolvedSearchParams =
     searchParams instanceof Promise ? await searchParams : searchParams;
   const { projectSlug } = resolvedParams;
   const { stepIndex } = resolvedSearchParams;
 
-  // Use admin client to fetch project (bypasses RLS)
-  // This allows us to access temporary projects
-  const { data: projects, error } = await adminClient
-    .from("projects")
-    .select("*")
-    .eq("slug", projectSlug);
+  // Fetch projects by slug using typed service
+  const projects = await ProjectsService.getBySlug(projectSlug);
 
-  if (error || !projects || projects.length === 0) {
+  if (projects.length === 0) {
     throw new NotFoundError("Project not found");
   }
 
   // Find the project the user has access to
-  let project: Project | null = null;
+  let project = null;
   for (const p of projects) {
-    const typedP = p as Project;
-    
     // Check if user owns it
-    if (user && typedP.user_id === user.id) {
-      project = typedP;
+    if (user && p.user_id === user.id) {
+      project = p;
       break;
     }
-    
+
     // Check if session matches (for temporary projects)
-    if (sessionId && typedP.session_id === sessionId) {
-      project = typedP;
+    if (sessionId && p.session_id === sessionId) {
+      project = p;
       break;
     }
-    
+
     // Check if it's public/unlisted (anyone can view)
-    if (
-      typedP.visibility === "public" ||
-      typedP.visibility === "unlisted"
-    ) {
-      project = typedP;
+    if (p.visibility === "public" || p.visibility === "unlisted") {
+      project = p;
       break;
     }
   }
@@ -66,13 +56,8 @@ export default async function ViewProjectPage({
     );
   }
 
-  const { data: steps } = await adminClient
-    .from("steps")
-    .select("*")
-    .eq("project_id", project.id)
-    .order("index", { ascending: true });
-
-  const typedSteps = (steps || []) as Step[];
+  // Fetch steps using typed service
+  const steps = await StepsService.getByProjectId(project.id);
 
   const initialStepIndex = stepIndex ? parseInt(stepIndex, 10) : 0;
 
@@ -80,7 +65,7 @@ export default async function ViewProjectPage({
     <div className="h-screen flex flex-col overflow-hidden">
       <Navbar />
       <div className="flex-1 min-h-0">
-        <Viewer steps={typedSteps} initialStepIndex={initialStepIndex} />
+        <Viewer steps={steps} initialStepIndex={initialStepIndex} />
       </div>
     </div>
   );

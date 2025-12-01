@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
 import { getSessionId } from "@/lib/session";
 import { NotFoundError, UnauthorizedError } from "@/lib/errors";
+import { ProjectsService } from "@/lib/services/projects.service";
 import type { Project, Database } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -10,33 +11,20 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * Verify project access for both authenticated users and temporary sessions
  * Returns the project if access is granted
  */
-export async function verifyProjectAccess(
-  projectId: string
-): Promise<Project> {
+export async function verifyProjectAccess(projectId: string): Promise<Project> {
   const user = await getUser();
   const sessionId = await getSessionId();
-  const adminClient = createAdminClient();
 
-  // Fetch project using admin client (bypasses RLS)
-  const { data: project, error } = await adminClient
-    .from("projects")
-    .select("*")
-    .eq("id", projectId)
-    .single();
-
-  if (error || !project) {
-    throw new NotFoundError("Project not found");
-  }
-
-  const typedProject = project as Project;
+  // Fetch project using typed service
+  const project = await ProjectsService.getById(projectId);
 
   // Check access: either user owns it or session matches
-  if (user && typedProject.user_id === user.id) {
-    return typedProject;
+  if (user && project.user_id === user.id) {
+    return project;
   }
 
-  if (sessionId && typedProject.session_id === sessionId) {
-    return typedProject;
+  if (sessionId && project.session_id === sessionId) {
+    return project;
   }
 
   throw new UnauthorizedError(
@@ -64,4 +52,3 @@ export async function getProjectClient(project: Project): Promise<{
     isTemporary: false,
   };
 }
-

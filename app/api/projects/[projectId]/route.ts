@@ -1,10 +1,11 @@
 import { updateProjectSchema } from "@/lib/validations";
 import { generateSlug, ensureUniqueSlug } from "@/lib/slug";
 import { createErrorResponse } from "@/lib/errors";
-import { verifyProjectAccess, getProjectClient } from "@/lib/project-access";
+import { verifyProjectAccess } from "@/lib/project-access";
 import { getUser } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { NextRequest } from "next/server";
+import { ProjectsService } from "@/lib/services/projects.service";
+import { createClient } from "@/lib/supabase/server";
 import type { ProjectUpdate } from "@/types/database";
 
 export async function PATCH(
@@ -16,8 +17,8 @@ export async function PATCH(
     const { projectId } = resolvedParams;
 
     const project = await verifyProjectAccess(projectId);
-    const { client: supabase, isTemporary } = await getProjectClient(project);
     const user = await getUser();
+    const isTemporary = !!(project.session_id && !project.user_id);
 
     const body = await request.json();
     const validatedData = updateProjectSchema.parse(body);
@@ -29,22 +30,18 @@ export async function PATCH(
     // If name is being updated, regenerate slug
     if (validatedData.name) {
       const slug = generateSlug(validatedData.name);
-      
+
       if (isTemporary) {
         // For temporary projects, check uniqueness within session
         const sessionId = project.session_id!;
-        const adminClient = createAdminClient();
-        const { data: existingProjects } = await adminClient
-          .from("projects")
-          .select("slug")
-          .eq("session_id", sessionId)
-          .eq("slug", slug)
-          .neq("id", projectId);
+        const existingSlugs = await ProjectsService.getSlugsBySessionId(
+          sessionId
+        );
 
         let uniqueSlug = slug;
-        if (existingProjects && existingProjects.length > 0) {
+        if (existingSlugs.includes(slug)) {
           let counter = 1;
-          while (existingProjects.some(p => p.slug === `${slug}-${counter}`)) {
+          while (existingSlugs.includes(`${slug}-${counter}`)) {
             counter++;
           }
           uniqueSlug = `${slug}-${counter}`;
@@ -52,6 +49,7 @@ export async function PATCH(
         updateData.slug = uniqueSlug;
       } else if (user) {
         // For authenticated users, use existing logic
+        const supabase = await createClient();
         updateData.slug = await ensureUniqueSlug(
           slug,
           user.id,
@@ -63,20 +61,14 @@ export async function PATCH(
 
     updateData.updated_at = new Date().toISOString();
 
-    // Type assertion needed due to Supabase TypeScript inference limitation
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from("projects")
-      .update(updateData)
-      .eq("id", projectId)
-      .select()
-      .single();
+    // Use typed service to update
+    const updatedProject = await ProjectsService.update(
+      projectId,
+      updateData,
+      isTemporary
+    );
 
-    if (error) {
-      return createErrorResponse(error);
-    }
-
-    return Response.json(data);
+    return Response.json(updatedProject);
   } catch (error) {
     return createErrorResponse(error);
   }
@@ -91,16 +83,10 @@ export async function DELETE(
     const { projectId } = resolvedParams;
 
     const project = await verifyProjectAccess(projectId);
-    const { client: supabase } = await getProjectClient(project);
+    const isTemporary = !!(project.session_id && !project.user_id);
 
-    const { error } = await supabase
-      .from("projects")
-      .delete()
-      .eq("id", projectId);
-
-    if (error) {
-      return createErrorResponse(error);
-    }
+    // Use typed service to delete
+    await ProjectsService.delete(projectId, isTemporary);
 
     return Response.json({ success: true });
   } catch (error) {

@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth";
 import {
   Card,
@@ -17,43 +16,31 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { format } from "date-fns";
-import type { Project } from "@/types/database";
+import { ProjectsService } from "@/lib/services/projects.service";
+import { StepsService } from "@/lib/services/steps.service";
 
 export default async function DashboardPage() {
   const user = await requireAuth();
-  const supabase = await createClient();
 
-  // Get all projects
-  const { data: projects, error: projectsError } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("updated_at", { ascending: false });
+  // Get all projects using typed service
+  const projects = await ProjectsService.getByUserId(user.id);
 
-  if (projectsError) {
-    return <div>Error loading dashboard data</div>;
+  // Get total steps count across all projects
+  let totalSteps = 0;
+  for (const project of projects) {
+    const steps = await StepsService.getByProjectId(project.id);
+    totalSteps += steps.length;
   }
 
-  const typedProjects = (projects || []) as Project[];
-
-  // Get total steps count
-  const { count: totalSteps } = await supabase
-    .from("steps")
-    .select("*", { count: "exact", head: true })
-    .in(
-      "project_id",
-      typedProjects.map((p) => p.id)
-    );
-
   // Get recent projects (last 5)
-  const recentProjects = typedProjects.slice(0, 5);
+  const recentProjects = projects.slice(0, 5);
 
   // Calculate stats
-  const totalProjects = typedProjects.length;
-  const publicProjects = typedProjects.filter(
+  const totalProjects = projects.length;
+  const publicProjects = projects.filter(
     (p) => p.visibility === "public"
   ).length;
-  const privateProjects = typedProjects.filter(
+  const privateProjects = projects.filter(
     (p) => p.visibility === "private"
   ).length;
 

@@ -1,8 +1,8 @@
-import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyProjectAccess } from "@/lib/project-access";
 import { NotFoundError, UnauthorizedError } from "@/lib/errors";
 import { EditorLayout } from "@/components/editor/editor-layout";
-import type { Project, Step } from "@/types/database";
+import { ProjectsService } from "@/lib/services/projects.service";
+import { StepsService } from "@/lib/services/steps.service";
 
 export default async function EditProjectPage({
   params,
@@ -13,22 +13,17 @@ export default async function EditProjectPage({
     params instanceof Promise ? await params : params;
   const { projectSlug } = resolvedParams;
 
-  // Use admin client to fetch project (bypasses RLS)
-  // We'll verify access using verifyProjectAccess
-  const adminClient = createAdminClient();
-  const { data: projects, error } = await adminClient
-    .from("projects")
-    .select("*")
-    .eq("slug", projectSlug);
+  // Fetch projects by slug using typed service
+  const projects = await ProjectsService.getBySlug(projectSlug);
 
-  if (error || !projects || projects.length === 0) {
+  if (projects.length === 0) {
     throw new NotFoundError("Project not found");
   }
 
   // Find the project the user has access to
-  let project: Project | null = null;
+  let project = null;
   let hasUnauthorizedAccess = false;
-  
+
   for (const p of projects) {
     try {
       project = await verifyProjectAccess(p.id);
@@ -54,13 +49,8 @@ export default async function EditProjectPage({
     throw new NotFoundError("Project not found");
   }
 
-  const { data: steps } = await adminClient
-    .from("steps")
-    .select("*")
-    .eq("project_id", project.id)
-    .order("index", { ascending: true });
+  // Fetch steps using typed service
+  const steps = await StepsService.getByProjectId(project.id);
 
-  const typedSteps = (steps || []) as Step[];
-
-  return <EditorLayout project={project} initialSteps={typedSteps} />;
+  return <EditorLayout project={project} initialSteps={steps} />;
 }
