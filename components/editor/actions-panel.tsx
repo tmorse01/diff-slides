@@ -47,6 +47,8 @@ export function ActionsPanel({
   const [showAdditions, setShowAdditions] = useState(true);
   const [showDeletions, setShowDeletions] = useState(true);
   const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [exportFormat, setExportFormat] = useState("gif");
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleCopyJSON = async () => {
     const data = {
@@ -63,6 +65,67 @@ export function ActionsPanel({
   const handleDuplicate = () => {
     if (selectedStepId) {
       onDuplicateStep(selectedStepId);
+    }
+  };
+
+  const handleExportGif = async () => {
+    if (steps.length === 0) {
+      toast({
+        title: "No steps to export",
+        description: "Add at least one step to export the project.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const params = new URLSearchParams({
+        duration: duration.toString(),
+      });
+
+      const response = await fetch(
+        `/api/projects/${projectId}/export/gif?${params.toString()}`,
+        {
+          method: "GET",
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({
+          error: "Failed to export GIF",
+        }));
+        throw new Error(error.error || "Failed to export GIF");
+      }
+
+      // Get the blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${projectSlug}-export.gif`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Export successful",
+        description: "Your GIF has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Export error:", error);
+      toast({
+        title: "Export failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred while exporting the GIF.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -219,7 +282,7 @@ export function ActionsPanel({
               <Label htmlFor="format" className="text-xs text-muted-foreground">
                 Format
               </Label>
-              <Select defaultValue="mp4">
+              <Select value={exportFormat} onValueChange={setExportFormat}>
                 <SelectTrigger id="format" className="h-9">
                   <SelectValue />
                 </SelectTrigger>
@@ -268,11 +331,24 @@ export function ActionsPanel({
               variant="outline"
               className="w-full gap-2 justify-start bg-transparent"
               size="sm"
-              disabled
-              title="Coming soon"
+              onClick={handleExportGif}
+              disabled={
+                isExporting ||
+                steps.length === 0 ||
+                exportFormat !== "gif"
+              }
+              title={
+                exportFormat !== "gif"
+                  ? "Select GIF format to export"
+                  : steps.length === 0
+                  ? "Add at least one step to export"
+                  : isExporting
+                  ? "Exporting..."
+                  : "Export as animated GIF"
+              }
             >
               <ImageIcon className="w-4 h-4" />
-              Export GIF
+              {isExporting ? "Exporting..." : "Export GIF"}
             </Button>
           </div>
         </div>
