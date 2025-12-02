@@ -17,11 +17,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CodeEditor } from "./code-editor";
 import { DiffView } from "./diff-view";
 import { computeDiff } from "@/lib/diff";
+import type { DiffSettings } from "@/lib/diff-settings";
 import type { Step } from "@/types/database";
 
 interface StepEditorProps {
   step: Step | null;
   previousStep: Step | null;
+  diffSettings: DiffSettings;
   onSave: (data: {
     title: string;
     notes: string | null;
@@ -54,6 +56,7 @@ const languages = ["typescript", "javascript", "python", "html", "css", "json"];
 export function StepEditor({
   step,
   previousStep,
+  diffSettings,
   onSave,
   onDataChange,
   onGetCurrentData,
@@ -388,6 +391,7 @@ export function StepEditor({
                 previousCode={previousStep?.code || ""}
                 currentCode={code}
                 language={language}
+                diffSettings={diffSettings}
               />
             </TabsContent>
           </Tabs>

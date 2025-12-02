@@ -5,6 +5,7 @@ import { StepEditor } from "./step-editor";
 import { ActionsPanel } from "./actions-panel";
 import { TemporaryProjectBanner } from "@/components/temporary-project-banner";
 import { useStepEditor } from "@/hooks/use-step-editor";
+import { useDiffSettings } from "@/hooks/use-diff-settings";
 import type { Project, Step } from "@/types/database";
 
 interface EditorLayoutProps {
@@ -33,6 +34,13 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
     projectId: project.id,
   });
 
+  // Manage diff settings with hook
+  const { settings: diffSettings, updateSettings: updateDiffSettings } =
+    useDiffSettings({
+      projectId: project.id,
+      projectSettings: project.settings,
+    });
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {isTemporaryProject && <TemporaryProjectBanner />}
@@ -49,6 +57,7 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
         <StepEditor
           step={selectedStep}
           previousStep={previousStep}
+          diffSettings={diffSettings}
           onSave={async (data) => {
             // CRITICAL: Always require step ID from selectedStep
             if (!selectedStep) {
@@ -70,6 +79,8 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
           projectSlug={project.slug}
           projectId={project.id}
           steps={steps}
+          diffSettings={diffSettings}
+          onDiffSettingsChange={updateDiffSettings}
         />
       </div>
     </div>

@@ -41,6 +41,7 @@ export interface Database {
           slug: string;
           description: string | null;
           visibility: "private" | "unlisted" | "public";
+          settings: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -52,6 +53,7 @@ export interface Database {
           slug: string;
           description?: string | null;
           visibility?: "private" | "unlisted" | "public";
+          settings?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -63,6 +65,7 @@ export interface Database {
           slug?: string;
           description?: string | null;
           visibility?: "private" | "unlisted" | "public";
+          settings?: Json | null;
           created_at?: string;
           updated_at?: string;
         };

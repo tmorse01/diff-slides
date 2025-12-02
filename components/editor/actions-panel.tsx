@@ -29,6 +29,12 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { ProjectVisibilitySelector } from "@/components/project-visibility-selector";
+import {
+  exportProject,
+  downloadBlob,
+  type ExportFormat,
+} from "@/lib/services/export.service";
+import type { DiffSettings } from "@/lib/diff-settings";
 import type { Project, Step } from "@/types/database";
 
 interface ActionsPanelProps {
@@ -36,6 +42,8 @@ interface ActionsPanelProps {
   projectSlug: string;
   projectId: string;
   steps: Step[];
+  diffSettings: DiffSettings;
+  onDiffSettingsChange: (settings: Partial<DiffSettings>) => void;
 }
 
 export function ActionsPanel({
@@ -43,11 +51,10 @@ export function ActionsPanel({
   projectSlug,
   projectId,
   steps,
+  diffSettings,
+  onDiffSettingsChange,
 }: ActionsPanelProps) {
   const [duration, setDuration] = useState(3);
-  const [showAdditions, setShowAdditions] = useState(true);
-  const [showDeletions, setShowDeletions] = useState(true);
-  const [showLineNumbers, setShowLineNumbers] = useState(true);
   const [exportFormat, setExportFormat] = useState("gif");
   const [isExporting, setIsExporting] = useState(false);
 
@@ -76,37 +83,15 @@ export function ActionsPanel({
     setIsExporting(true);
 
     try {
-      const params = new URLSearchParams({
-        duration: duration.toString(),
+      const format = (exportFormat === "mp4" ? "mp4" : "gif") as ExportFormat;
+      const result = await exportProject({
+        projectId,
+        format,
+        duration,
+        projectSlug,
       });
 
-      const format = exportFormat === "mp4" ? "mp4" : "gif";
-      const response = await fetch(
-        `/api/projects/${projectId}/export/${format}?${params.toString()}`,
-        {
-          method: "GET",
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({
-          error: `Failed to export ${format.toUpperCase()}`,
-        }));
-        throw new Error(
-          error.error || `Failed to export ${format.toUpperCase()}`
-        );
-      }
-
-      // Get the blob and trigger download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${projectSlug}-export.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      downloadBlob(result.blob, result.filename);
 
       toast({
         title: "Export successful",
@@ -337,8 +322,10 @@ export function ActionsPanel({
                 </Label>
                 <Switch
                   id="show-additions"
-                  checked={showAdditions}
-                  onCheckedChange={setShowAdditions}
+                  checked={diffSettings.showAdditions}
+                  onCheckedChange={(checked) =>
+                    onDiffSettingsChange({ showAdditions: checked })
+                  }
                 />
               </div>
 
@@ -351,8 +338,10 @@ export function ActionsPanel({
                 </Label>
                 <Switch
                   id="show-deletions"
-                  checked={showDeletions}
-                  onCheckedChange={setShowDeletions}
+                  checked={diffSettings.showDeletions}
+                  onCheckedChange={(checked) =>
+                    onDiffSettingsChange({ showDeletions: checked })
+                  }
                 />
               </div>
 
@@ -365,8 +354,10 @@ export function ActionsPanel({
                 </Label>
                 <Switch
                   id="line-numbers"
-                  checked={showLineNumbers}
-                  onCheckedChange={setShowLineNumbers}
+                  checked={diffSettings.showLineNumbers}
+                  onCheckedChange={(checked) =>
+                    onDiffSettingsChange({ showLineNumbers: checked })
+                  }
                 />
               </div>
             </div>

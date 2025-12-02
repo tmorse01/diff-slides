@@ -2,19 +2,32 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DiffView } from "@/components/editor/diff-view";
+import { NotesDrawer } from "./notes-drawer";
+import { extractDiffSettings } from "@/lib/diff-settings";
 import type { Step } from "@/types/database";
+import type { Json } from "@/types/database";
 
 interface ViewerProps {
   steps: Step[];
   initialStepIndex?: number;
+  projectSettings?: Json | null;
 }
 
-export function Viewer({ steps, initialStepIndex = 0 }: ViewerProps) {
+export function Viewer({
+  steps,
+  initialStepIndex = 0,
+  projectSettings,
+}: ViewerProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(
     Math.max(0, Math.min(initialStepIndex, steps.length - 1))
   );
+  const [notesOpen, setNotesOpen] = useState(true); // Default to open on desktop
+
+  // Extract diff settings from project settings (read-only in viewer)
+  const diffSettings = extractDiffSettings(projectSettings);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -24,6 +37,7 @@ export function Viewer({ steps, initialStepIndex = 0 }: ViewerProps) {
       if (!isNaN(index) && index >= 0 && index < steps.length) {
         // Use a small timeout to avoid cascading renders
         const timeoutId = setTimeout(() => {
+          setNotesOpen(false);
           setCurrentStepIndex(index);
         }, 0);
         return () => clearTimeout(timeoutId);
@@ -37,17 +51,20 @@ export function Viewer({ steps, initialStepIndex = 0 }: ViewerProps) {
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
+      setNotesOpen(false);
       setCurrentStepIndex(currentStepIndex - 1);
     }
   };
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
+      setNotesOpen(false);
       setCurrentStepIndex(currentStepIndex + 1);
     }
   };
 
   const handleStepClick = (index: number) => {
+    setNotesOpen(false);
     setCurrentStepIndex(index);
   };
 
@@ -60,15 +77,44 @@ export function Viewer({ steps, initialStepIndex = 0 }: ViewerProps) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-4 h-full flex flex-col">
-      <div className="bg-card border border-border rounded-lg overflow-hidden shadow-2xl flex-1 min-h-0 flex flex-col">
-        <div className="flex-1 min-h-0">
-          <DiffView
-            previousCode={previousStep?.code || ""}
-            currentCode={currentStep.code}
-            language={currentStep.language}
-            stepTitle={currentStep.title}
-          />
+    <div className="max-w-7xl mx-auto px-4 py-4 h-full flex flex-col">
+      <div className="bg-card border border-border rounded-lg overflow-hidden shadow-2xl flex-1 min-h-0 flex flex-col relative">
+        <div className="flex-1 min-h-0 flex overflow-hidden">
+          {/* Main diff view */}
+          <div className="flex-1 min-h-0 flex flex-col relative">
+            <DiffView
+              previousCode={previousStep?.code || ""}
+              currentCode={currentStep.code}
+              language={currentStep.language}
+              stepTitle={currentStep.title}
+              diffSettings={diffSettings}
+              headerActions={
+                currentStep.notes ? (
+                  <NotesDrawer
+                    notes={currentStep.notes}
+                    open={notesOpen}
+                    onOpenChange={setNotesOpen}
+                  />
+                ) : undefined
+              }
+            />
+          </div>
+
+          {/* Desktop: Notes panel (inline, toggleable) */}
+          {currentStep.notes && notesOpen && (
+            <div className="hidden md:flex flex-col w-80 border-l border-border bg-secondary/30 shrink-0">
+              <div className="px-4 py-3 border-b border-border">
+                <h3 className="text-sm font-semibold text-foreground">Notes</h3>
+              </div>
+              <ScrollArea className="flex-1">
+                <div className="px-4 py-4">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {currentStep.notes}
+                  </p>
+                </div>
+              </ScrollArea>
+            </div>
+          )}
         </div>
 
         {/* Step navigation at the bottom */}

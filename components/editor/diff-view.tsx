@@ -4,12 +4,16 @@ import { useMemo, useEffect, useState } from "react";
 import { computeDiff } from "@/lib/diff";
 import { codeToHtml } from "shiki";
 
+import type { DiffSettings } from "@/lib/diff-settings";
+
 interface DiffViewProps {
   previousCode: string;
   currentCode: string;
   language: string;
   stepTitle?: string;
   fileName?: string;
+  diffSettings?: DiffSettings;
+  headerActions?: React.ReactNode;
 }
 
 // Map language names to shiki language IDs
@@ -30,7 +34,15 @@ export function DiffView({
   language,
   stepTitle,
   fileName,
+  diffSettings,
+  headerActions,
 }: DiffViewProps) {
+  // Use provided settings or defaults
+  const settings = diffSettings || {
+    showAdditions: true,
+    showDeletions: true,
+    showLineNumbers: true,
+  };
   const diff = useMemo(
     () => computeDiff(previousCode || "", currentCode || ""),
     [previousCode, currentCode]
@@ -131,7 +143,7 @@ export function DiffView({
               return `component.${ext}`;
             })()}
         </div>
-        <div className="w-20" /> {/* Spacer for balance */}
+        <div className="flex items-center gap-2">{headerActions}</div>
       </div>
 
       {/* Step indicator */}
@@ -143,56 +155,93 @@ export function DiffView({
 
       {/* Code content with syntax highlighting */}
       <div className="bg-background relative flex-1 overflow-hidden flex flex-col">
-        {/* Line numbers gutter */}
-        <div className="absolute left-0 top-0 bottom-0 w-12 bg-muted/30 border-r border-border z-10 flex flex-col pointer-events-none">
-          {diff.lines.map((line, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-end px-2 py-0 text-xs text-muted-foreground font-mono"
-              style={{ minHeight: "1.5rem", lineHeight: "1.5rem" }}
-            >
-              {line.lineNumber !== undefined ? line.lineNumber : " "}
-            </div>
-          ))}
-        </div>
+        {/* Filter lines based on settings */}
+        {(() => {
+          const filteredLines = highlightedLines
+            .map((line, index) => {
+              const diffLine = diff.lines[index];
+              return {
+                ...line,
+                originalIndex: index,
+                diffLine: diffLine || {
+                  type: line.type,
+                  value: "",
+                  lineNumber: undefined,
+                },
+              };
+            })
+            .filter((line) => {
+              if (line.type === "added" && !settings.showAdditions)
+                return false;
+              if (line.type === "removed" && !settings.showDeletions)
+                return false;
+              return true;
+            });
 
-        {/* Code content */}
-        <div className="pl-12 overflow-auto flex-1">
-          <pre className="font-mono text-sm m-0 p-6">
-            <code className="block">
-              {highlightedLines.map((line, index) => {
-                const bgColor =
-                  line.type === "added"
-                    ? "bg-accent/10 border-l-2 border-accent"
-                    : line.type === "removed"
-                    ? "bg-destructive/10 border-l-2 border-destructive"
-                    : "";
+          return (
+            <>
+              {/* Line numbers gutter */}
+              {settings.showLineNumbers && (
+                <div className="absolute left-0 top-0 bottom-0 w-12 bg-muted/30 border-r border-border z-10 flex flex-col pointer-events-none">
+                  {filteredLines.map((line, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-end px-2 py-0 text-xs text-muted-foreground font-mono"
+                      style={{ minHeight: "1.5rem", lineHeight: "1.5rem" }}
+                    >
+                      {line.diffLine.lineNumber !== undefined
+                        ? line.diffLine.lineNumber
+                        : " "}
+                    </div>
+                  ))}
+                </div>
+              )}
 
-                return (
-                  <div
-                    key={index}
-                    className={`flex items-start py-1 px-2 -mx-6 ${bgColor} ${
-                      line.type === "removed" ? "opacity-70" : ""
-                    }`}
-                  >
-                    <span
-                      className="flex-1"
-                      dangerouslySetInnerHTML={{ __html: line.html }}
-                      style={{
-                        whiteSpace: "pre",
-                        tabSize: 2,
-                        fontFamily:
-                          "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
-                        textDecoration:
-                          line.type === "removed" ? "line-through" : "none",
-                      }}
-                    />
-                  </div>
-                );
-              })}
-            </code>
-          </pre>
-        </div>
+              {/* Code content */}
+              <div
+                className={settings.showLineNumbers ? "pl-12" : ""}
+                style={{ overflow: "auto", flex: 1 }}
+              >
+                <pre className="font-mono text-sm m-0 p-6">
+                  <code className="block">
+                    {filteredLines.map((line, index) => {
+                      const bgColor =
+                        line.type === "added"
+                          ? "bg-accent/10 border-l-2 border-accent"
+                          : line.type === "removed"
+                          ? "bg-destructive/10 border-l-2 border-destructive"
+                          : "";
+
+                      return (
+                        <div
+                          key={index}
+                          className={`flex items-start py-1 px-2 -mx-6 ${bgColor} ${
+                            line.type === "removed" ? "opacity-70" : ""
+                          }`}
+                        >
+                          <span
+                            className="flex-1"
+                            dangerouslySetInnerHTML={{ __html: line.html }}
+                            style={{
+                              whiteSpace: "pre",
+                              tabSize: 2,
+                              fontFamily:
+                                "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace",
+                              textDecoration:
+                                line.type === "removed"
+                                  ? "line-through"
+                                  : "none",
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </code>
+                </pre>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );

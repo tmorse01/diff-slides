@@ -27,6 +27,18 @@ export async function PATCH(
       ...validatedData,
     };
 
+    // Merge settings if provided (don't replace entire settings object)
+    if (validatedData.settings && project.settings) {
+      const currentSettings =
+        typeof project.settings === "object" && project.settings !== null
+          ? (project.settings as Record<string, unknown>)
+          : {};
+      updateData.settings = {
+        ...currentSettings,
+        ...(validatedData.settings as Record<string, unknown>),
+      } as typeof validatedData.settings;
+    }
+
     // If name is being updated, regenerate slug
     if (validatedData.name) {
       const slug = generateSlug(validatedData.name);
