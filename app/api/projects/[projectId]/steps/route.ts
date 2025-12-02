@@ -5,6 +5,24 @@ import { NextRequest } from "next/server";
 import { StepsService } from "@/lib/services/steps.service";
 import type { StepInsert } from "@/types/database";
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ projectId: string }> | { projectId: string } }
+) {
+  try {
+    const resolvedParams = params instanceof Promise ? await params : params;
+    const { projectId } = resolvedParams;
+
+    await verifyProjectAccess(projectId);
+
+    const steps = await StepsService.getByProjectId(projectId);
+
+    return Response.json(steps);
+  } catch (error) {
+    return createErrorResponse(error);
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ projectId: string }> | { projectId: string } }

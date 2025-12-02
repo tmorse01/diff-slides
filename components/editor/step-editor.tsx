@@ -67,7 +67,6 @@ export function StepEditor({
   const [language, setLanguage] = useState("typescript");
   const [code, setCode] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>("");
   // Track which step ID the form state is currently displaying
   const currentFormStepIdRef = useRef<string | null>(null);
@@ -95,50 +94,6 @@ export function StepEditor({
     setHasUnsavedChanges(changed);
     return changed;
   }, [getCurrentData]);
-
-  // Auto-save function (debounced)
-  const triggerAutoSave = useCallback(() => {
-    if (!step || !checkDataChanged()) return;
-
-    // Clear existing timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-
-    // Set new timer for auto-save (3 seconds after last change)
-    autoSaveTimerRef.current = setTimeout(async () => {
-      // Capture step ID at the time of save to prevent saving wrong step
-      const currentStepId = step?.id;
-      if (!currentStepId) {
-        return;
-      }
-
-      const data = getCurrentData();
-
-      // Validate data before saving
-      if (!data.title.trim() || !data.code.trim()) {
-        return;
-      }
-
-      // Validate step ID before saving
-      if (step.id !== currentStepId) {
-        return;
-      }
-
-      try {
-        await onSave(data);
-        lastSavedDataRef.current = JSON.stringify(data);
-        setHasUnsavedChanges(false);
-
-        // Notify parent of data change with step ID for validation
-        if (onDataChange && step) {
-          onDataChange(data, step.id);
-        }
-      } catch {
-        // Don't clear unsaved changes flag if save failed
-      }
-    }, 3000);
-  }, [step, checkDataChanged, getCurrentData, onSave, onDataChange]);
 
   // Expose getCurrentData function to parent with step ID
   useEffect(() => {
@@ -190,7 +145,7 @@ export function StepEditor({
     }
   }, [step]); // Re-run when step changes
 
-  // Trigger auto-save when any field changes
+  // Track changes and notify parent (no auto-save)
   useEffect(() => {
     // CRITICAL: Don't process changes if we're updating form state or if form state doesn't match current step
     if (
@@ -202,8 +157,6 @@ export function StepEditor({
     }
 
     if (checkDataChanged()) {
-      triggerAutoSave();
-
       // Notify parent of data change immediately with step ID
       // CRITICAL: Double-check step ID matches before notifying
       if (onDataChange && step && currentFormStepIdRef.current === step.id) {
@@ -211,12 +164,6 @@ export function StepEditor({
         onDataChange(data, step.id);
       }
     }
-
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
   }, [
     title,
     notes,
@@ -224,15 +171,19 @@ export function StepEditor({
     code,
     step,
     checkDataChanged,
-    triggerAutoSave,
     onDataChange,
     getCurrentData,
   ]);
 
-  const handleSave = async () => {
-    // Clear auto-save timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
+  const handleSave = useCallback(async () => {
+    // CRITICAL: Validate step ID matches before saving
+    if (!step || currentFormStepIdRef.current !== step.id) {
+      toast({
+        variant: "destructive",
+        title: "Cannot save",
+        description: "Step has changed. Please refresh and try again.",
+      });
+      return;
     }
 
     const data = getCurrentData();
@@ -263,7 +214,40 @@ export function StepEditor({
     } catch {
       // Error is already handled by onSave
     }
-  };
+  }, [step, getCurrentData, onSave]);
+
+  // Keyboard shortcut: Ctrl+S (or Cmd+S on Mac) to save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl+S (Windows/Linux) or Cmd+S (Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        // Don't trigger if user is typing in an input, textarea, or contenteditable
+        const target = e.target as HTMLElement;
+        const isInputField =
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable;
+
+        // Only prevent default and save if not in an input field
+        // This allows normal save behavior in code editor, but prevents browser save dialog
+        if (!isInputField) {
+          e.preventDefault();
+          if (step && !isSaving) {
+            handleSave();
+          }
+        } else {
+          // If in input field, still prevent browser save but don't trigger our save
+          // This prevents the browser save dialog when typing in form fields
+          e.preventDefault();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [step, isSaving, handleSave]);
 
   if (!step) {
     return (

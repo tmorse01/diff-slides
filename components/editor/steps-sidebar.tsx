@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,6 +20,7 @@ interface StepsSidebarProps {
   onAddStep: () => void;
   onDuplicateStep: (stepId: string) => void;
   onDeleteStep: (stepId: string) => void;
+  onReorderSteps: (draggedStepId: string, targetIndex: number) => void;
   projectSlug: string;
 }
 
@@ -30,20 +31,23 @@ export function StepsSidebar({
   onAddStep,
   onDuplicateStep,
   onDeleteStep,
+  onReorderSteps,
   projectSlug,
 }: StepsSidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [draggedStepId, setDraggedStepId] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const hasDraggedRef = useRef(false);
 
   const sortedSteps = [...steps].sort((a, b) => a.index - b.index);
-  const selectedIndex = sortedSteps.findIndex((s) => s.id === selectedStepId);
 
   const handleStartEdit = (id: string, title: string) => {
     setEditingId(id);
     setEditTitle(title);
   };
 
-  const handleSaveTitle = (id: string) => {
+  const handleSaveTitle = () => {
     if (editTitle.trim()) {
       // TODO: Update step title via API
       setEditingId(null);
@@ -61,6 +65,55 @@ export function StepsSidebar({
       const prevStep = idx > 0 ? sortedSteps[idx - 1] : null;
       return acc + getChangeCount(step, prevStep);
     }, 0);
+  };
+
+  const handleDragStart = (e: React.DragEvent, stepId: string) => {
+    setDraggedStepId(stepId);
+    hasDraggedRef.current = false;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", stepId);
+    // Add a slight delay to allow drag image to be set
+    setTimeout(() => {
+      if (e.dataTransfer) {
+        e.dataTransfer.setDragImage(new Image(), 0, 0);
+      }
+    }, 0);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverIndex(index);
+    hasDraggedRef.current = true;
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+
+    if (!draggedStepId) return;
+
+    const draggedIndex = sortedSteps.findIndex((s) => s.id === draggedStepId);
+    if (draggedIndex === -1 || draggedIndex === targetIndex) {
+      setDraggedStepId(null);
+      return;
+    }
+
+    onReorderSteps(draggedStepId, targetIndex);
+    setDraggedStepId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedStepId(null);
+    setDragOverIndex(null);
+    // Reset hasDragged after a short delay to allow click handler to check it
+    setTimeout(() => {
+      hasDraggedRef.current = false;
+    }, 100);
   };
 
   return (
@@ -100,23 +153,43 @@ export function StepsSidebar({
             const prevStep = idx > 0 ? sortedSteps[idx - 1] : null;
             const changes = getChangeCount(step, prevStep);
             const isActive = step.id === selectedStepId;
+            const isDragging = draggedStepId === step.id;
+            const isDragOver = dragOverIndex === idx;
 
             return (
               <div
                 key={step.id}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, idx)}
                 className={`w-full p-3 rounded-lg text-left hover:bg-accent/5 transition-colors group relative ${
                   isActive ? "bg-accent/10 border border-accent/30" : ""
+                } ${isDragging ? "opacity-50" : ""} ${
+                  isDragOver && !isDragging
+                    ? "bg-accent/20 border-2 border-accent border-dashed"
+                    : ""
                 }`}
               >
                 <button
-                  onClick={() => onSelectStep(step.id)}
+                  onClick={() => {
+                    // Don't select if we just finished dragging
+                    if (!hasDraggedRef.current) {
+                      onSelectStep(step.id);
+                    }
+                  }}
                   className="w-full text-left"
+                  type="button"
                 >
                   <div className="flex items-start gap-2">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="shrink-0">
-                          <GripVertical className="w-4 h-4 text-muted-foreground mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab" />
+                        <span
+                          className="shrink-0 cursor-grab active:cursor-grabbing"
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, step.id)}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <GripVertical className="w-4 h-4 text-muted-foreground mt-1 opacity-100 group-hover:opacity-100 transition-opacity" />
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="right">
@@ -139,9 +212,9 @@ export function StepsSidebar({
                           type="text"
                           value={editTitle}
                           onChange={(e) => setEditTitle(e.target.value)}
-                          onBlur={() => handleSaveTitle(step.id)}
+                          onBlur={() => handleSaveTitle()}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") handleSaveTitle(step.id);
+                            if (e.key === "Enter") handleSaveTitle();
                             if (e.key === "Escape") setEditingId(null);
                           }}
                           className="text-sm font-medium bg-background border border-accent rounded px-1 w-full"
@@ -169,6 +242,7 @@ export function StepsSidebar({
                           onDuplicateStep(step.id);
                         }}
                         className="p-1 hover:bg-accent/10 rounded"
+                        type="button"
                       >
                         <Copy className="w-3 h-3 text-muted-foreground" />
                       </button>
@@ -186,6 +260,7 @@ export function StepsSidebar({
                             onDeleteStep(step.id);
                           }}
                           className="p-1 hover:bg-destructive/10 rounded"
+                          type="button"
                         >
                           <Trash2 className="w-3 h-3 text-destructive" />
                         </button>

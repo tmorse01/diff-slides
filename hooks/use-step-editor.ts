@@ -1,6 +1,9 @@
 import { useState, useRef, useCallback } from "react";
+import React from "react";
 import type { Step } from "@/types/database";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction, type ToastActionElement } from "@/components/ui/toast";
+import { StepsApiService } from "@/lib/services/steps-api.service";
 
 interface StepData {
   title: string;
@@ -25,6 +28,7 @@ export function useStepEditor({
     initialSteps.length > 0 ? initialSteps[0].id : null
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
 
   // Store unsaved changes per step ID to prevent cross-contamination
   const unsavedChangesRef = useRef<Map<string, StepData>>(new Map());
@@ -33,6 +37,8 @@ export function useStepEditor({
     stepId: string;
     getData: () => StepData;
   } | null>(null);
+  // Track steps that failed to save in background
+  const failedSavesRef = useRef<Set<string>>(new Set());
 
   const selectedStep = steps.find((s) => s.id === selectedStepId) || null;
   const selectedStepIndex = selectedStep
@@ -44,6 +50,11 @@ export function useStepEditor({
   // Save step with strict validation
   const saveStep = useCallback(
     async (data: StepData, stepId: string, silent = false) => {
+      // CRITICAL: Prevent saves during reordering
+      if (isReordering) {
+        throw new Error("Cannot save while reordering steps");
+      }
+
       // CRITICAL: stepId is required - never use selectedStep.id as fallback
       if (!stepId) {
         throw new Error("stepId is required for save operation");
@@ -82,25 +93,7 @@ export function useStepEditor({
         setIsSaving(true);
       }
       try {
-        const response = await fetch(`/api/steps/${stepId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to save step: ${errorText}`);
-        }
-
-        const updatedStep = await response.json();
-
-        // CRITICAL: Validate that we saved the correct step
-        if (updatedStep.id !== stepId) {
-          throw new Error(
-            `CRITICAL: Step ID mismatch - tried to save to ${stepId} but got ${updatedStep.id}`
-          );
-        }
+        const updatedStep = await StepsApiService.updateStep(stepId, data);
 
         // Only update if IDs match
         setSteps((prevSteps) =>
@@ -130,33 +123,37 @@ export function useStepEditor({
         }
       }
     },
-    [steps, onStepUpdate]
+    [steps, onStepUpdate, isReordering]
   );
 
-  // Wrapper for step selection that saves before switching
+  // Wrapper for step selection - optimistic switching with background save
   const selectStep = useCallback(
-    async (newStepId: string) => {
+    (newStepId: string) => {
+      // CRITICAL: Prevent selection during reordering
+      if (isReordering) {
+        return;
+      }
+
       const currentStepId = selectedStepId;
 
-      // If we're switching from a step, save it first
+      // OPTIMISTIC: Switch immediately without waiting
+      // CRITICAL: Clear any stale data from the Map for the step we're switching to
+      unsavedChangesRef.current.delete(newStepId);
+      setSelectedStepId(newStepId);
+
+      // Save previous step in background (non-blocking)
       if (currentStepId && currentStepId !== newStepId) {
         // Get unsaved changes for the current step from our Map
-        // CRITICAL: Only use Map data - it's the source of truth
-        // Do NOT use getter as it may capture stale form state
         const dataToSave = unsavedChangesRef.current.get(currentStepId);
 
-        // Only save if we have data for the CURRENT step
         if (dataToSave) {
-          // Double-check: verify the step exists and get its current state
           const currentStep = steps.find((s) => s.id === currentStepId);
           if (currentStep) {
-            // Validate data before saving - ensure title and code are not empty
             const trimmedTitle = (dataToSave.title || "").trim();
             const trimmedCode = (dataToSave.code || "").trim();
 
-            // If form data is empty, don't save - just switch
+            // Only save if we have valid data and it has changed
             if (trimmedTitle && trimmedCode) {
-              // Check if data has actually changed
               const hasChanges =
                 trimmedTitle !== currentStep.title ||
                 dataToSave.notes !== (currentStep.notes || null) ||
@@ -164,48 +161,57 @@ export function useStepEditor({
                 trimmedCode !== currentStep.code;
 
               if (hasChanges) {
-                // Ensure we're saving valid data
                 const validData = {
                   ...dataToSave,
                   title: trimmedTitle,
                   code: trimmedCode,
                 };
 
-                try {
-                  // CRITICAL: Always pass the explicit stepId
-                  await saveStep(validData, currentStepId, true);
-                } catch {
-                  // Don't switch if save fails - user should know
+                // Save in background silently - don't await
+                saveStep(validData, currentStepId, true).catch(() => {
+                  // Track failed save
+                  failedSavesRef.current.add(currentStepId);
+
+                  // Show error toast with option to go back
+                  const actionElement = React.createElement(
+                    ToastAction,
+                    {
+                      altText: "Go back to step",
+                      onClick: () => {
+                        setSelectedStepId(currentStepId);
+                        failedSavesRef.current.delete(currentStepId);
+                      },
+                    },
+                    "Go back"
+                  ) as unknown as ToastActionElement;
+
                   toast({
                     variant: "destructive",
                     title: "Failed to save changes",
-                    description:
-                      "Please try saving manually before switching steps.",
+                    description: `Changes to "${currentStep.title}" could not be saved. Go back to that step to retry.`,
+                    action: actionElement,
                   });
-                  return; // Abort the switch
-                }
+                });
               }
             }
           }
         }
 
-        // Clear unsaved changes for the step we're leaving
+        // Clear unsaved changes for the step we're leaving (optimistic)
         unsavedChangesRef.current.delete(currentStepId);
       }
-
-      // CRITICAL: Clear any stale data from the Map for the step we're switching to
-      // This prevents old data from being used if the user switches back quickly
-      unsavedChangesRef.current.delete(newStepId);
-
-      // Now switch to the new step
-      setSelectedStepId(newStepId);
     },
-    [selectedStepId, saveStep, steps]
+    [selectedStepId, saveStep, steps, isReordering]
   );
 
   // Handle data changes from editor
   const handleDataChange = useCallback(
     (data: StepData, stepId: string, currentSelectedStepId: string | null) => {
+      // CRITICAL: Don't accept changes during reordering
+      if (isReordering) {
+        return;
+      }
+
       // CRITICAL: Validate stepId matches selectedStep before storing
       if (!currentSelectedStepId || stepId !== currentSelectedStepId) {
         return;
@@ -236,7 +242,7 @@ export function useStepEditor({
       // Store in Map keyed by stepId for isolation
       unsavedChangesRef.current.set(stepId, data);
     },
-    [steps]
+    [steps, isReordering]
   );
 
   // Handle data getter registration
@@ -259,23 +265,28 @@ export function useStepEditor({
 
   // Add step
   const addStep = useCallback(async () => {
+    // CRITICAL: Prevent adding during reordering
+    if (isReordering) {
+      toast({
+        variant: "destructive",
+        title: "Cannot add step",
+        description: "Please wait for reordering to complete.",
+      });
+      return;
+    }
+
     try {
-      const response = await fetch(`/api/projects/${projectId}/steps`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "New Step",
-          notes: null,
-          language: "typescript",
-          code: "",
-        }),
+      const newStep = await StepsApiService.createStep(projectId, {
+        title: "New Step",
+        notes: null,
+        language: "typescript",
+        code: "",
       });
 
-      if (!response.ok) throw new Error("Failed to create step");
-
-      const newStep = await response.json();
       setSteps((prevSteps) => [...prevSteps, newStep]);
       setSelectedStepId(newStep.id);
+      // Clear unsaved changes for new step
+      unsavedChangesRef.current.delete(newStep.id);
       toast({
         title: "Step added",
         description: `New step "${newStep.title}" created.`,
@@ -287,31 +298,36 @@ export function useStepEditor({
         description: "Please try again.",
       });
     }
-  }, [projectId]);
+  }, [projectId, isReordering]);
 
   // Duplicate step
   const duplicateStep = useCallback(
     async (stepId: string) => {
+      // CRITICAL: Prevent duplicating during reordering
+      if (isReordering) {
+        toast({
+          variant: "destructive",
+          title: "Cannot duplicate step",
+          description: "Please wait for reordering to complete.",
+        });
+        return;
+      }
+
       const step = steps.find((s) => s.id === stepId);
       if (!step) return;
 
       try {
-        const response = await fetch(`/api/projects/${projectId}/steps`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: `${step.title} (Copy)`,
-            notes: step.notes,
-            language: step.language,
-            code: step.code,
-          }),
+        const newStep = await StepsApiService.createStep(projectId, {
+          title: `${step.title} (Copy)`,
+          notes: step.notes,
+          language: step.language,
+          code: step.code,
         });
 
-        if (!response.ok) throw new Error("Failed to duplicate step");
-
-        const newStep = await response.json();
         setSteps((prevSteps) => [...prevSteps, newStep]);
         setSelectedStepId(newStep.id);
+        // Clear unsaved changes for new step
+        unsavedChangesRef.current.delete(newStep.id);
         toast({
           title: "Step duplicated",
           description: `Step "${newStep.title}" duplicated.`,
@@ -324,20 +340,26 @@ export function useStepEditor({
         });
       }
     },
-    [steps, projectId]
+    [steps, projectId, isReordering]
   );
 
   // Delete step
   const deleteStep = useCallback(
     async (stepId: string) => {
+      // CRITICAL: Prevent deleting during reordering
+      if (isReordering) {
+        toast({
+          variant: "destructive",
+          title: "Cannot delete step",
+          description: "Please wait for reordering to complete.",
+        });
+        return;
+      }
+
       if (!confirm("Are you sure you want to delete this step?")) return;
 
       try {
-        const response = await fetch(`/api/steps/${stepId}`, {
-          method: "DELETE",
-        });
-
-        if (!response.ok) throw new Error("Failed to delete step");
+        await StepsApiService.deleteStep(stepId);
 
         setSteps((prevSteps) => prevSteps.filter((s) => s.id !== stepId));
         if (selectedStepId === stepId) {
@@ -360,7 +382,121 @@ export function useStepEditor({
         });
       }
     },
-    [selectedStepId, steps]
+    [selectedStepId, steps, isReordering]
+  );
+
+  // Reorder steps
+  const reorderSteps = useCallback(
+    async (draggedStepId: string, targetIndex: number) => {
+      // CRITICAL: Set reordering flag to prevent saves and selections
+      setIsReordering(true);
+
+      try {
+        const sortedSteps = [...steps].sort((a, b) => a.index - b.index);
+        const draggedIndex = sortedSteps.findIndex(
+          (s) => s.id === draggedStepId
+        );
+
+        if (draggedIndex === -1 || draggedIndex === targetIndex) {
+          setIsReordering(false);
+          return; // No change needed
+        }
+
+        // CRITICAL: Save current step before reordering if it has unsaved changes
+        const currentStepId = selectedStepId;
+        if (currentStepId) {
+          const dataToSave = unsavedChangesRef.current.get(currentStepId);
+          if (dataToSave) {
+            const currentStep = steps.find((s) => s.id === currentStepId);
+            if (currentStep) {
+              const trimmedTitle = (dataToSave.title || "").trim();
+              const trimmedCode = (dataToSave.code || "").trim();
+              if (trimmedTitle && trimmedCode) {
+                try {
+                  await saveStep(
+                    {
+                      ...dataToSave,
+                      title: trimmedTitle,
+                      code: trimmedCode,
+                    },
+                    currentStepId,
+                    true
+                  );
+                } catch {
+                  // Continue with reorder even if save fails
+                }
+              }
+            }
+          }
+        }
+
+        // CRITICAL: Clear all unsaved changes before reordering
+        // This prevents stale data from being associated with wrong steps
+        unsavedChangesRef.current.clear();
+
+        // Optimistically update UI
+        const reorderedStepsLocal = [...sortedSteps];
+        const [draggedStep] = reorderedStepsLocal.splice(draggedIndex, 1);
+        reorderedStepsLocal.splice(targetIndex, 0, draggedStep);
+
+        // Update indices
+        const updatedSteps = reorderedStepsLocal.map((step, idx) => ({
+          ...step,
+          index: idx,
+        }));
+
+        setSteps(updatedSteps);
+
+        // CRITICAL: If the selected step was moved, update selectedStepId to track it
+        // The step ID doesn't change, so selectedStepId remains valid
+
+        // Update all steps in the database using the reorder endpoint
+        // This handles the unique constraint properly by updating atomically
+        const stepIds = updatedSteps.map((step) => step.id);
+        const reorderedStepsFromServer = await StepsApiService.reorderSteps(
+          projectId,
+          stepIds
+        );
+
+        // Verify all steps were updated correctly
+        if (reorderedStepsFromServer.length !== updatedSteps.length) {
+          throw new Error("Not all steps were updated");
+        }
+
+        // Update local state with the server response to ensure consistency
+        setSteps(reorderedStepsFromServer);
+
+        toast({
+          title: "Steps reordered",
+          description: "The step order has been updated.",
+        });
+      } catch (error) {
+        console.error("Failed to reorder steps:", error);
+        // Revert on error - reload steps from server
+        try {
+          const refreshedSteps = await StepsApiService.getSteps(projectId);
+          setSteps(refreshedSteps);
+        } catch (refreshError) {
+          console.error(
+            "Failed to refresh steps after reorder error:",
+            refreshError
+          );
+          // If refresh fails, at least revert to previous state
+          setSteps(steps);
+        }
+        toast({
+          variant: "destructive",
+          title: "Failed to reorder steps",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Please try again. The order has been reverted.",
+        });
+      } finally {
+        setIsReordering(false);
+      }
+    },
+    [steps, selectedStepId, saveStep, projectId]
   );
 
   return {
@@ -374,6 +510,7 @@ export function useStepEditor({
     addStep,
     duplicateStep,
     deleteStep,
+    reorderSteps,
     handleDataChange,
     handleGetCurrentData,
   };

@@ -27,6 +27,7 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
     addStep,
     duplicateStep,
     deleteStep,
+    reorderSteps,
     handleDataChange,
     handleGetCurrentData,
   } = useStepEditor({
@@ -52,6 +53,7 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
           onAddStep={addStep}
           onDuplicateStep={duplicateStep}
           onDeleteStep={deleteStep}
+          onReorderSteps={reorderSteps}
           projectSlug={project.slug}
         />
         <StepEditor

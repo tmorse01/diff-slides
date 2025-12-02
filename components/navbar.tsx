@@ -10,27 +10,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  User,
+  LogOut,
+  LayoutDashboard,
+  LogIn,
+  UserPlus,
+  Plus,
+} from "lucide-react";
 import { DiffCodeIcon } from "@/components/diff-code-icon";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { useUser } from "@/hooks/use-user";
 
 export function Navbar() {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const { user, loading } = useUser();
   const router = useRouter();
   const supabase = createClient();
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-    });
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-  }, [supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -51,43 +48,65 @@ export function Navbar() {
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="flex items-center justify-center"
-                >
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex items-center justify-center"
+                disabled={loading}
+              >
+                {loading ? (
+                  <Skeleton className="h-5 w-5 rounded-full" />
+                ) : (
                   <User className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard">Dashboard</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <div className="flex gap-2">
-              <Button asChild variant="ghost">
-                <Link href="/auth/login">Login</Link>
+                )}
               </Button>
-              <Button asChild variant="outline">
-                <Link href="/projects/new">Create Project</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/auth/register">Sign Up</Link>
-              </Button>
-            </div>
-          )}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {user ? (
+                <>
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" className="flex items-center">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/auth/login" className="flex items-center">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      <span>Login</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/auth/register" className="flex items-center">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      <span>Sign Up</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/projects/new" className="flex items-center">
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span>Create Project</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </nav>
