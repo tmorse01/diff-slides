@@ -11,9 +11,9 @@ export default function Home() {
     <div className="min-h-screen">
       <Navbar />
       <Hero />
+      <Preview />
       <EditorShowcase />
       <Features />
-      <Preview />
       <Pricing />
       <Footer />
     </div>

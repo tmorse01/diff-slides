@@ -4,56 +4,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DiffView } from "@/components/editor/diff-view";
-
-const codeSteps = [
-  {
-    title: "Step 1: Initial setup",
-    previousCode: "",
-    currentCode: `import React from "react"
-
-function UserProfile() {
-  return <div>Profile</div>
-}`,
-    language: "typescript",
-  },
-  {
-    title: "Step 2: Add state management",
-    previousCode: `import React from "react"
-
-function UserProfile() {
-  return <div>Profile</div>
-}`,
-    currentCode: `import React from "react"
-import { useState } from "react"
-
-function UserProfile() {
-  const [name, setName] = useState("")
-  return <div>Profile</div>
-}`,
-    language: "typescript",
-  },
-  {
-    title: "Step 3: Update JSX",
-    previousCode: `import React from "react"
-import { useState } from "react"
-
-function UserProfile() {
-  const [name, setName] = useState("")
-  return <div>Profile</div>
-}`,
-    currentCode: `import React from "react"
-import { useState } from "react"
-
-function UserProfile() {
-  const [name, setName] = useState("")
-  return <div>Welcome, {name}!</div>
-}`,
-    language: "typescript",
-  },
-];
+import { previewExamples } from "@/data/examples";
 
 export function Preview() {
+  const [selectedExampleId, setSelectedExampleId] = useState(
+    previewExamples[0].id
+  );
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+
+  const selectedExample =
+    previewExamples.find((ex) => ex.id === selectedExampleId) ||
+    previewExamples[0];
+  const codeSteps = selectedExample.steps;
 
   const nextStep = () => {
     setCurrentStepIndex((prev) => (prev + 1) % codeSteps.length);
@@ -73,6 +35,12 @@ export function Preview() {
   const previousStep =
     currentStepIndex > 0 ? codeSteps[currentStepIndex - 1] : null;
 
+  // Reset to first step when example changes
+  const handleExampleChange = (exampleId: string) => {
+    setSelectedExampleId(exampleId);
+    setCurrentStepIndex(0);
+  };
+
   return (
     <section className="py-24 relative">
       <div className="container px-4 mx-auto">
@@ -86,6 +54,21 @@ export function Preview() {
           </p>
         </div>
 
+        {/* Example selector */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          {previewExamples.map((example) => (
+            <Button
+              key={example.id}
+              onClick={() => handleExampleChange(example.id)}
+              variant={selectedExampleId === example.id ? "default" : "outline"}
+              size="sm"
+              className="text-sm"
+            >
+              {example.title}
+            </Button>
+          ))}
+        </div>
+
         <div className="max-w-6xl mx-auto">
           <div className="bg-card border border-border rounded-lg overflow-hidden shadow-2xl h-[600px] flex flex-col">
             <div className="flex-1 min-h-0">
@@ -94,7 +77,7 @@ export function Preview() {
                 currentCode={currentStep.currentCode}
                 language={currentStep.language}
                 stepTitle={currentStep.title}
-                fileName="UserProfile.tsx"
+                fileName={currentStep.fileName || "example.tsx"}
               />
             </div>
 
