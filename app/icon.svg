@@ -1,19 +1,24 @@
 <svg
   xmlns="http://www.w3.org/2000/svg"
-  width="32"
-  height="32"
+  width="24"
+  height="24"
   viewBox="0 0 24 24"
   fill="none"
   stroke="currentColor"
-  stroke-width="3.5"
+  stroke-width="2"
   stroke-linecap="round"
   stroke-linejoin="round"
+  class="lucide lucide-diff-icon lucide-diff"
 >
-  <!-- Right bracket - green (added/new) -->
-  <path d="m18 16 4-4-4-4" stroke="#22c55e" />
-  <!-- Left bracket - red (removed/deleted) -->
-  <path d="m6 8-4 4 4 4" stroke="#ef4444" />
-  <!-- Middle line - neutral gray -->
-  <path d="m14.5 4-5 16" stroke="#6b7280" opacity="0.6" />
+  <!-- Central vertical line -->
+  <path d="M12 3v14" stroke="currentColor" opacity="0.3" />
+  
+  <!-- Top plus sign (added - green) -->
+  <g stroke="#22c55e">
+    <path d="M5 10h14" />
+    <path d="M12 3v14" />
+  </g>
+  
+  <!-- Bottom minus sign (removed - red) -->
+  <path d="M5 21h14" stroke="#ef4444" />
 </svg>
-

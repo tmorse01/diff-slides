@@ -50,12 +50,7 @@ export function Hero() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Button
-              asChild
-              size="lg"
-              variant="default"
-              className="group"
-            >
+            <Button asChild size="lg" variant="default" className="group">
               <Link href={ctaHref}>
                 {user ? "Go to Dashboard" : "Create Project"}
                 <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -106,7 +101,7 @@ export function Hero() {
             </Link>
             <span className="text-muted-foreground">•</span>
             <Link
-              href="/docs"
+              href="/documentation"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Documentation
