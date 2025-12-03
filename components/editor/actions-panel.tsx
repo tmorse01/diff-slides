@@ -128,8 +128,8 @@ export function ActionsPanel({
             <TooltipTrigger asChild>
               <Button
                 size="icon"
-                variant="default"
-                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                variant="accent"
+                className="flex-1"
                 onClick={() => {
                   window.open(`/view/${projectSlug}`, "_blank");
                 }}

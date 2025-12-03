@@ -53,7 +53,8 @@ export function Hero() {
             <Button
               asChild
               size="lg"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 group"
+              variant="default"
+              className="group"
             >
               <Link href={ctaHref}>
                 {user ? "Go to Dashboard" : "Create Project"}
