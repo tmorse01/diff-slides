@@ -177,10 +177,10 @@ export function StepsSidebar({
                       onSelectStep(step.id);
                     }
                   }}
-                  className="w-full text-left"
+                  className="w-full text-left min-w-0"
                   type="button"
                 >
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 min-w-0 w-full">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span
@@ -222,7 +222,8 @@ export function StepsSidebar({
                         />
                       ) : (
                         <p
-                          className="text-sm font-medium text-foreground truncate max-w-full"
+                          className="text-sm font-medium text-foreground truncate max-w-[240px]"
+                          title={step.title}
                           onDoubleClick={() =>
                             handleStartEdit(step.id, step.title)
                           }
