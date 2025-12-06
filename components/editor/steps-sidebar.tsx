@@ -222,7 +222,7 @@ export function StepsSidebar({
                         />
                       ) : (
                         <p
-                          className="text-sm font-medium text-foreground truncate"
+                          className="text-sm font-medium text-foreground truncate max-w-full"
                           onDoubleClick={() =>
                             handleStartEdit(step.id, step.title)
                           }
