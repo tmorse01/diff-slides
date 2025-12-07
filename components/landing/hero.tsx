@@ -38,7 +38,7 @@ export function Hero() {
           {/* Main heading */}
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-balance">
             Explain code by{" "}
-            <span className="bg-clip-text text-transparent bg-linear-to-r from-primary to-chart-3">
+            <span className="bg-clip-text text-transparent bg-linear-to-r from-primary to-destructive">
               highlighting how it changes
             </span>
           </h1>
