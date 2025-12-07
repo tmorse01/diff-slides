@@ -1,0 +1,11 @@
+{
+  "colorize.colorized_colors": [
+    "HEXA",
+    "RGB",
+    "HSL",
+    "BROWSERS_COLORS",
+    "OKLAB",
+    "OKLCH"
+  ],
+  "colorize.decoration_type": "dot"
+}
