@@ -242,7 +242,7 @@ export default function DocumentationPage() {
                   show removed lines
                 </li>
                 <li>
-                  <span className="inline-block w-3 h-3 rounded-full bg-chart-3 mr-2"></span>
+                  <span className="inline-block w-3 h-3 rounded-full bg-warning mr-2"></span>
                   <strong className="text-foreground">Yellow highlights</strong>{" "}
                   show modified lines
                 </li>

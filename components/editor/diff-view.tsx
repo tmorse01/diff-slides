@@ -128,7 +128,7 @@ export function DiffView({
       <div className="bg-secondary border-b border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-destructive" />
-          <div className="w-3 h-3 rounded-full bg-chart-3" />
+          <div className="w-3 h-3 rounded-full bg-warning" />
           <div className="w-3 h-3 rounded-full bg-primary" />
         </div>
         <div className="text-sm font-mono text-muted-foreground">

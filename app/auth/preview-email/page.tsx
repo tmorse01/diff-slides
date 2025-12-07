@@ -161,7 +161,7 @@ export default function PreviewEmailPage() {
             <div className="border border-border rounded-lg overflow-hidden bg-muted/20">
               <div className="bg-card p-2 border-b border-border flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-destructive"></div>
-                <div className="w-3 h-3 rounded-full bg-chart-3"></div>
+                <div className="w-3 h-3 rounded-full bg-warning"></div>
                 <div className="w-3 h-3 rounded-full bg-primary"></div>
                 <div className="ml-auto text-xs text-muted-foreground">
                   {isMobile ? "Mobile View (375px)" : "Desktop View (600px)"}
