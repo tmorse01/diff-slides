@@ -101,7 +101,7 @@ export function Preview() {
                     onClick={() => handleStepClick(idx)}
                     className={`w-2 h-2 rounded-full transition-colors ${
                       idx === currentStepIndex
-                        ? "bg-accent w-6"
+                        ? "bg-primary w-6"
                         : "bg-muted-foreground/30 hover:bg-muted-foreground/50"
                     }`}
                     aria-label={`Go to step ${idx + 1}`}

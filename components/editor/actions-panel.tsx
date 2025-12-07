@@ -128,7 +128,7 @@ export function ActionsPanel({
             <TooltipTrigger asChild>
               <Button
                 size="icon"
-                variant="accent"
+                variant="default"
                 className="flex-1"
                 onClick={() => {
                   window.open(`/view/${projectSlug}`, "_blank");

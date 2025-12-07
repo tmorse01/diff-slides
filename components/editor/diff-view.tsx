@@ -129,7 +129,7 @@ export function DiffView({
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-destructive" />
           <div className="w-3 h-3 rounded-full bg-chart-3" />
-          <div className="w-3 h-3 rounded-full bg-accent" />
+          <div className="w-3 h-3 rounded-full bg-primary" />
         </div>
         <div className="text-sm font-mono text-muted-foreground">
           {fileName ||
@@ -207,7 +207,7 @@ export function DiffView({
                     {filteredLines.map((line, index) => {
                       const bgColor =
                         line.type === "added"
-                          ? "bg-accent/10 border-l-2 border-accent"
+                          ? "bg-primary/10 border-l-2 border-primary"
                           : line.type === "removed"
                           ? "bg-destructive/10 border-l-2 border-destructive"
                           : "";

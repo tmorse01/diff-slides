@@ -37,7 +37,7 @@ export default function DocumentationPage() {
         {/* Header */}
         <div className="mb-12 text-center space-y-4">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <BookOpen className="h-8 w-8 text-accent" />
+            <BookOpen className="h-8 w-8 text-primary" />
             <h1 className="text-4xl md:text-5xl font-bold">User Guide</h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -232,7 +232,7 @@ export default function DocumentationPage() {
               </p>
               <ul className="space-y-2 list-disc list-inside text-sm text-muted-foreground ml-6">
                 <li>
-                  <span className="inline-block w-3 h-3 rounded-full bg-accent mr-2"></span>
+                  <span className="inline-block w-3 h-3 rounded-full bg-primary mr-2"></span>
                   <strong className="text-foreground">Green highlights</strong>{" "}
                   show added lines
                 </li>

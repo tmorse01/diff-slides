@@ -29,7 +29,7 @@ export function Pricing() {
                 key={idx}
                 className="flex items-center gap-2 text-sm text-muted-foreground"
               >
-                <Check className="w-4 h-4 text-accent shrink-0" />
+                <Check className="w-4 h-4 text-primary shrink-0" />
                 <span>{feature}</span>
               </div>
             ))}

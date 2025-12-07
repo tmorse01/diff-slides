@@ -42,7 +42,7 @@ export function Navbar() {
           href="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <DiffCodeIcon size={20} className="text-accent" />
+          <DiffCodeIcon size={20} className="text-primary" />
           <span className="text-xl font-mono font-semibold text-foreground">
             DiffSlides
           </span>

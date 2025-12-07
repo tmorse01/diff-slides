@@ -269,7 +269,7 @@ export function StepEditor({
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-destructive" />
             <div className="w-3 h-3 rounded-full bg-chart-3" />
-            <div className="w-3 h-3 rounded-full bg-accent" />
+            <div className="w-3 h-3 rounded-full bg-primary" />
           </div>
           <span className="text-sm font-mono text-foreground">
             {step ? `${step.title}.${step.language}` : "Untitled"}
@@ -304,7 +304,7 @@ export function StepEditor({
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {additions > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-accent" />
+                    <span className="w-2 h-2 rounded-full bg-primary" />
                     {additions} {additions === 1 ? "addition" : "additions"}
                   </span>
                 )}

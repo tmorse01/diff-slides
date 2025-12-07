@@ -162,11 +162,11 @@ export function StepsSidebar({
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, idx)}
-                className={`w-full p-3 rounded-lg text-left hover:bg-accent/5 transition-colors group relative ${
-                  isActive ? "bg-accent/10 border border-accent/30" : ""
+                className={`w-full p-3 rounded-lg text-left hover:bg-primary/5 transition-colors group relative ${
+                  isActive ? "bg-primary/10 border border-primary/30" : ""
                 } ${isDragging ? "opacity-50" : ""} ${
                   isDragOver && !isDragging
-                    ? "bg-accent/20 border-2 border-accent border-dashed"
+                    ? "bg-primary/20 border-2 border-primary border-dashed"
                     : ""
                 }`}
               >
@@ -217,7 +217,7 @@ export function StepsSidebar({
                             if (e.key === "Enter") handleSaveTitle();
                             if (e.key === "Escape") setEditingId(null);
                           }}
-                          className="text-sm font-medium bg-background border border-accent rounded px-1 w-full"
+                          className="text-sm font-medium bg-background border border-primary rounded px-1 w-full"
                           autoFocus
                         />
                       ) : (
@@ -242,7 +242,7 @@ export function StepsSidebar({
                           e.stopPropagation();
                           onDuplicateStep(step.id);
                         }}
-                        className="p-1 hover:bg-accent/10 rounded"
+                        className="p-1 hover:bg-primary/10 rounded"
                         type="button"
                       >
                         <Copy className="w-3 h-3 text-muted-foreground" />

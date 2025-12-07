@@ -65,8 +65,8 @@ export function Sidebar() {
     return (
       <aside className="w-16 bg-sidebar border-r border-sidebar-border h-full flex flex-col items-center py-4 gap-2">
         <Link href="/" className="mb-4">
-          <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-            <Code2 className="w-5 h-5 text-accent" />
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Code2 className="w-5 h-5 text-primary" />
           </div>
         </Link>
 
@@ -153,7 +153,7 @@ export function Sidebar() {
           href="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <Code2 className="w-5 h-5 text-accent" />
+          <Code2 className="w-5 h-5 text-primary" />
           <span className="text-xl font-mono font-semibold text-sidebar-foreground">
             DiffSlides
           </span>

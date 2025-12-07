@@ -32,11 +32,11 @@ const features = [
 ];
 
 export function Features() {
-  // Color glows matching window buttons: red (destructive), yellow (chart-3), green (accent)
-  const glowColors: Array<"destructive" | "chart-3" | "accent"> = [
+  // Color glows matching window buttons: red (destructive), yellow (chart-3), green (primary)
+  const glowColors: Array<"destructive" | "chart-3" | "primary"> = [
     "destructive", // Red
     "chart-3", // Yellow
-    "accent", // Green
+    "primary", // Green
     "destructive", // Red (repeat pattern)
   ];
 

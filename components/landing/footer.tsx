@@ -8,7 +8,7 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 max-w-6xl mx-auto">
           {/* Brand */}
           <div className="flex items-center gap-2">
-            <Code2 className="w-5 h-5 text-accent" />
+            <Code2 className="w-5 h-5 text-primary" />
             <span className="font-mono font-semibold text-foreground">
               DiffSlides
             </span>

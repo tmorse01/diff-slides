@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 
 interface FrostedGlassCardProps {
   children: ReactNode;
-  glowColor?: "destructive" | "chart-3" | "accent";
+  glowColor?: "destructive" | "chart-3" | "primary";
   className?: string;
 }
 
@@ -17,15 +17,15 @@ const glowColorClasses = {
     glow: "bg-chart-3/30",
     icon: "text-chart-3",
   },
-  accent: {
-    glow: "bg-accent/30",
-    icon: "text-accent",
+  primary: {
+    glow: "bg-primary/30",
+    icon: "text-primary",
   },
 };
 
 export function FrostedGlassCard({
   children,
-  glowColor = "accent",
+  glowColor = "primary",
   className,
 }: FrostedGlassCardProps) {
   const colors = glowColorClasses[glowColor];
@@ -59,7 +59,7 @@ export function FrostedGlassCard({
 
 // Export the icon color class helper for use in children
 export function getGlowIconColor(
-  glowColor: "destructive" | "chart-3" | "accent"
+  glowColor: "destructive" | "chart-3" | "primary"
 ) {
   return glowColorClasses[glowColor].icon;
 }
