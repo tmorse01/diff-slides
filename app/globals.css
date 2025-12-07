@@ -125,6 +125,15 @@
   }
 }
 
+/* Fix button text color in dark mode on hover */
+/* The custom dark variant can cause hover:text-accent-foreground to apply dark text on light backgrounds */
+/* Only apply to outline variant buttons (those with borders) that use accent-foreground on hover */
+@layer utilities {
+  .dark button[data-slot="button"][class*="border"]:hover {
+    color: var(--foreground);
+  }
+}
+
 /* Custom animations for code diff transitions */
 @keyframes diff-fade-in {
   from {
