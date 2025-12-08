@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import type { Step } from "@/types/database";
-import {
-  hasLineRange,
-  getLineRangeFromStep,
-  validateLineRange,
-  type LineRange,
-} from "@/lib/line-range-helpers";
+import { validateLineRange } from "@/lib/line-range-helpers";
 
 interface StepFormData {
   title: string;
@@ -43,11 +38,11 @@ interface UseStepEditorFormReturn {
   setLanguage: (value: string) => void;
   setCode: (value: string) => void;
 
-  // Line range state
-  lineRangeStart: string;
-  lineRangeEnd: string;
-  setLineRangeStart: (value: string) => void;
-  setLineRangeEnd: (value: string) => void;
+  // Line range state (null by default)
+  lineRangeStart: number | null;
+  lineRangeEnd: number | null;
+  setLineRangeStart: (value: number | null) => void;
+  setLineRangeEnd: (value: number | null) => void;
   lineRangeValidationError?: string;
   isLineRangeValid: boolean;
 
@@ -67,150 +62,50 @@ export function useStepEditorForm({
   onDataChange,
   onGetCurrentData,
 }: UseStepEditorFormOptions): UseStepEditorFormReturn {
-  const [title, setTitle] = useState("");
-  const [notes, setNotes] = useState("");
-  const [language, setLanguage] = useState("typescript");
-  const [code, setCode] = useState("");
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  // Single step object in state
+  const [formData, setFormData] = useState<StepFormData>(() => {
+    if (step) {
+      return {
+        title: step.title || "",
+        notes: step.notes || null,
+        language: step.language || "typescript",
+        code: step.code || "",
+        line_range_start: step.line_range_start ?? null,
+        line_range_end: step.line_range_end ?? null,
+      };
+    }
+    return {
+      title: "",
+      notes: null,
+      language: "typescript",
+      code: "",
+      line_range_start: null,
+      line_range_end: null,
+    };
+  });
+
   const lastSavedDataRef = useRef<string>("");
   const currentFormStepIdRef = useRef<string | null>(null);
   const isUpdatingFormStateRef = useRef<boolean>(false);
-  const previousStepIdRef = useRef<string | null>(null);
+  const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Calculate total lines for line range validation
-  const totalLines = code.split("\n").length;
-
-  // Compute target line range values from step
-  const targetLineRangeValues = useMemo(() => {
-    if (step && hasLineRange(step)) {
-      const range = getLineRangeFromStep(step);
-      if (range) {
-        return {
-          start: range.startLine.toString(),
-          end: range.endLine.toString(),
-        };
-      }
-    }
-    return { start: "", end: "" };
-  }, [step]);
-
-  // Initialize line range state with computed values
-  const [lineRangeStartState, setLineRangeStartState] = useState<string>(
-    () => targetLineRangeValues.start
-  );
-  const [lineRangeEndState, setLineRangeEndState] = useState<string>(
-    () => targetLineRangeValues.end
-  );
-
-  // Sync line range state when step changes
-  useEffect(() => {
-    const currentStepId = step?.id ?? null;
-    const previousStepId = previousStepIdRef.current;
-
-    if (currentStepId !== previousStepId) {
-      previousStepIdRef.current = currentStepId;
-      requestAnimationFrame(() => {
-        setLineRangeStartState(targetLineRangeValues.start);
-        setLineRangeEndState(targetLineRangeValues.end);
-      });
-    }
-  }, [step?.id, targetLineRangeValues.start, targetLineRangeValues.end]);
-
-  // Get parsed line range values
-  const getLineRange = useCallback((): LineRange | null => {
-    const startNum = parseInt(lineRangeStartState, 10);
-    const endNum = parseInt(lineRangeEndState, 10);
-
-    if (
-      isNaN(startNum) ||
-      isNaN(endNum) ||
-      !lineRangeStartState ||
-      !lineRangeEndState
-    ) {
-      return null;
-    }
-
-    return {
-      startLine: startNum,
-      endLine: endNum,
-    };
-  }, [lineRangeStartState, lineRangeEndState]);
-
-  // Validate the current line range
-  const lineRangeValidation = useCallback(() => {
-    // If both are empty, that's valid (means no range)
-    if (
-      (!lineRangeStartState || lineRangeStartState.trim() === "") &&
-      (!lineRangeEndState || lineRangeEndState.trim() === "")
-    ) {
-      return { valid: true }; // Empty is valid (means no range)
-    }
-
-    // If one is empty but not both, that's invalid (incomplete)
-    if (
-      !lineRangeStartState ||
-      lineRangeStartState.trim() === "" ||
-      !lineRangeEndState ||
-      lineRangeEndState.trim() === ""
-    ) {
-      return { valid: false, error: "Both start and end are required" };
-    }
-
-    const startNum = parseInt(lineRangeStartState, 10);
-    const endNum = parseInt(lineRangeEndState, 10);
-
-    if (isNaN(startNum) || isNaN(endNum)) {
-      return { valid: false, error: "Please enter valid line numbers" };
-    }
-
-    return validateLineRange(startNum, endNum, totalLines);
-  }, [lineRangeStartState, lineRangeEndState, totalLines]);
-
-  const lineRangeValidationResult = lineRangeValidation();
-  const isLineRangeValid = lineRangeValidationResult.valid;
-  const lineRangeValidationError = lineRangeValidationResult.error;
-
-  // Helper to get current data with validation
-  const getCurrentData = useCallback((): Omit<
-    StepFormData,
-    "line_range_start" | "line_range_end"
-  > => {
-    const safeTitle = title.trim() || step?.title || "";
-    const safeCode = code.trim() || step?.code || "";
-
-    return {
-      title: safeTitle,
-      notes: notes.trim() || null,
-      language: language || step?.language || "typescript",
-      code: safeCode,
-    };
-  }, [title, notes, language, code, step]);
-
-  // Helper to check if data has changed
-  const checkDataChanged = useCallback(() => {
-    const current = JSON.stringify(getCurrentData());
-    const changed = current !== lastSavedDataRef.current;
-    setHasUnsavedChanges(changed);
-    return changed;
-  }, [getCurrentData]);
-
-  // Expose getCurrentData function to parent with step ID
-  useEffect(() => {
-    if (onGetCurrentData && step) {
-      onGetCurrentData(getCurrentData, step.id);
-    }
-  }, [onGetCurrentData, getCurrentData, step]);
+  const totalLines = formData.code.split("\n").length;
 
   // Initialize form state when step changes
   useEffect(() => {
     if (step) {
       isUpdatingFormStateRef.current = true;
-
       const timeoutId = setTimeout(() => {
-        setTitle(step.title || "");
-        setNotes(step.notes || "");
-        setLanguage(step.language || "typescript");
-        setCode(step.code || "");
+        setFormData({
+          title: step.title || "",
+          notes: step.notes || null,
+          language: step.language || "typescript",
+          code: step.code || "",
+          line_range_start: step.line_range_start ?? null,
+          line_range_end: step.line_range_end ?? null,
+        });
 
         // Update last saved data when step changes
         lastSavedDataRef.current = JSON.stringify({
@@ -221,6 +116,7 @@ export function useStepEditorForm({
         });
 
         currentFormStepIdRef.current = step.id;
+        setHasAttemptedSave(false);
         setHasUnsavedChanges(false);
         isUpdatingFormStateRef.current = false;
       }, 0);
@@ -228,26 +124,88 @@ export function useStepEditorForm({
     } else {
       isUpdatingFormStateRef.current = true;
       const timeoutId = setTimeout(() => {
-        setTitle("");
-        setNotes("");
-        setLanguage("typescript");
-        setCode("");
+        setFormData({
+          title: "",
+          notes: null,
+          language: "typescript",
+          code: "",
+          line_range_start: null,
+          line_range_end: null,
+        });
         lastSavedDataRef.current = "";
         currentFormStepIdRef.current = null;
+        setHasAttemptedSave(false);
+        setHasUnsavedChanges(false);
         isUpdatingFormStateRef.current = false;
       }, 0);
       return () => clearTimeout(timeoutId);
     }
-  }, [step]);
+  }, [step, setHasUnsavedChanges]);
 
-  // Expose line range setters that update both state and sync with form
-  const setLineRangeStart = useCallback((value: string) => {
-    setLineRangeStartState(value);
-  }, []);
+  // Validate line range
+  const lineRangeValidation = useMemo(() => {
+    const start = formData.line_range_start;
+    const end = formData.line_range_end;
 
-  const setLineRangeEnd = useCallback((value: string) => {
-    setLineRangeEndState(value);
-  }, []);
+    // Both null is valid (no range specified)
+    if (start === null && end === null) {
+      return { valid: true };
+    }
+
+    // If one is set but not the other, that's invalid
+    if ((start !== null && end === null) || (start === null && end !== null)) {
+      return {
+        valid: false,
+        error: "Both start and end are required if specifying a range",
+      };
+    }
+
+    // Both are set, validate the range
+    if (
+      start !== null &&
+      end !== null &&
+      start !== undefined &&
+      end !== undefined
+    ) {
+      const validation = validateLineRange(start, end, totalLines);
+      return validation;
+    }
+
+    return { valid: true };
+  }, [formData.line_range_start, formData.line_range_end, totalLines]);
+
+  const isLineRangeValid = lineRangeValidation.valid;
+  // Only show validation errors if user has attempted to save
+  const lineRangeValidationError = hasAttemptedSave
+    ? lineRangeValidation.error
+    : undefined;
+
+  // Helper to get current data (without line ranges for onDataChange)
+  const getCurrentData = useCallback((): Omit<
+    StepFormData,
+    "line_range_start" | "line_range_end"
+  > => {
+    return {
+      title: formData.title.trim() || "",
+      notes: formData.notes?.trim() || null,
+      language: formData.language || "typescript",
+      code: formData.code.trim() || "",
+    };
+  }, [formData]);
+
+  // Helper to check if data has changed
+  const checkDataChanged = useCallback(() => {
+    const current = JSON.stringify(getCurrentData());
+    const changed = current !== lastSavedDataRef.current;
+    return changed;
+  }, [getCurrentData]);
+
+  // Expose getCurrentData function to parent with step ID
+  useEffect(() => {
+    if (onGetCurrentData && step) {
+      onGetCurrentData(getCurrentData, step.id);
+    }
+  }, [onGetCurrentData, getCurrentData, step]);
 
   // Track changes and notify parent (no auto-save)
   useEffect(() => {
@@ -266,18 +224,76 @@ export function useStepEditorForm({
       }
     }
   }, [
-    title,
-    notes,
-    language,
-    code,
+    formData.title,
+    formData.notes,
+    formData.language,
+    formData.code,
     step,
     checkDataChanged,
     onDataChange,
     getCurrentData,
   ]);
 
+  // Setters
+  const setTitle = useCallback((value: string) => {
+    setFormData((prev) => ({ ...prev, title: value }));
+  }, []);
+
+  const setNotes = useCallback((value: string) => {
+    setFormData((prev) => ({ ...prev, notes: value || null }));
+  }, []);
+
+  const setLanguage = useCallback((value: string) => {
+    setFormData((prev) => ({ ...prev, language: value }));
+  }, []);
+
+  const setCode = useCallback((value: string) => {
+    setFormData((prev) => ({ ...prev, code: value }));
+  }, []);
+
+  const setLineRangeStart = useCallback((value: number | null) => {
+    setFormData((prev) => ({ ...prev, line_range_start: value }));
+  }, []);
+
+  const setLineRangeEnd = useCallback((value: number | null) => {
+    setFormData((prev) => ({ ...prev, line_range_end: value }));
+  }, []);
+
+  // Track unsaved changes
+  useEffect(() => {
+    const updateHasUnsavedChanges = () => {
+      if (!step) {
+        setHasUnsavedChanges(false);
+        return;
+      }
+      const current = JSON.stringify(getCurrentData());
+      const hasChanges = current !== lastSavedDataRef.current;
+      setHasUnsavedChanges(hasChanges);
+    };
+
+    // Defer state update to avoid cascading renders
+    const timeoutId = setTimeout(updateHasUnsavedChanges, 0);
+    return () => clearTimeout(timeoutId);
+  }, [
+    step,
+    formData.title,
+    formData.notes,
+    formData.language,
+    formData.code,
+    getCurrentData,
+    setHasUnsavedChanges,
+  ]);
+
   const handleSave = useCallback(async () => {
     if (!step || currentFormStepIdRef.current !== step.id) {
+      return;
+    }
+
+    setHasAttemptedSave(true);
+
+    // Validate line range
+    if (!isLineRangeValid) {
+      // Validation error will be shown via lineRangeValidationError
       return;
     }
 
@@ -286,55 +302,14 @@ export function useStepEditorForm({
     // Build complete data object with line ranges
     const data: StepFormData = {
       ...baseData,
+      line_range_start: formData.line_range_start ?? null,
+      line_range_end: formData.line_range_end ?? null,
     };
-
-    // Get and validate line range
-    const range = getLineRange();
-    const startIsEmpty =
-      !lineRangeStartState || lineRangeStartState.trim() === "";
-    const endIsEmpty = !lineRangeEndState || lineRangeEndState.trim() === "";
-
-    // Debug logging
-    console.log("[handleSave] Line range state:", {
-      lineRangeStartState,
-      lineRangeEndState,
-      startIsEmpty,
-      endIsEmpty,
-      range,
-      isLineRangeValid,
-      validationError: lineRangeValidationError,
-      totalLines,
-    });
-
-    // Check if we have a complete, valid range
-    if (!startIsEmpty && !endIsEmpty && range && isLineRangeValid) {
-      // Valid range - use the parsed values
-      data.line_range_start = range.startLine;
-      data.line_range_end = range.endLine;
-      console.log("[handleSave] ✅ Setting line range:", {
-        start: range.startLine,
-        end: range.endLine,
-      });
-    } else if (startIsEmpty && endIsEmpty) {
-      // Both empty - clear line range
-      data.line_range_start = null;
-      data.line_range_end = null;
-      console.log("[handleSave] Clearing line range (both empty)");
-    } else {
-      // Incomplete or invalid - clear the range
-      data.line_range_start = null;
-      data.line_range_end = null;
-      console.log("[handleSave] Clearing line range (incomplete/invalid):", {
-        reason: startIsEmpty || endIsEmpty ? "incomplete" : "validation failed",
-        validationError: lineRangeValidationError,
-      });
-    }
-
-    console.log("[handleSave] Final payload:", JSON.stringify(data, null, 2));
 
     try {
       await onSave(data);
       lastSavedDataRef.current = JSON.stringify(baseData);
+      setHasAttemptedSave(false);
       setHasUnsavedChanges(false);
     } catch {
       // Error is already handled by onSave
@@ -343,31 +318,29 @@ export function useStepEditorForm({
     step,
     getCurrentData,
     onSave,
-    getLineRange,
     isLineRangeValid,
-    lineRangeValidationError,
-    lineRangeStartState,
-    lineRangeEndState,
-    totalLines,
+    formData.line_range_start,
+    formData.line_range_end,
+    setHasUnsavedChanges,
   ]);
 
   return {
-    title,
-    notes,
-    language,
-    code,
+    title: formData.title,
+    notes: formData.notes || "",
+    language: formData.language,
+    code: formData.code,
     hasUnsavedChanges,
     setTitle,
     setNotes,
     setLanguage,
     setCode,
-    lineRangeStart: lineRangeStartState,
-    lineRangeEnd: lineRangeEndState,
+    lineRangeStart: formData.line_range_start ?? null,
+    lineRangeEnd: formData.line_range_end ?? null,
     setLineRangeStart,
     setLineRangeEnd,
     lineRangeValidationError,
     isLineRangeValid,
     handleSave,
     totalLines,
-  };
+  } as UseStepEditorFormReturn;
 }

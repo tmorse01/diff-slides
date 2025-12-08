@@ -21,15 +21,15 @@ interface StepEditorFormFieldsProps {
   title: string;
   notes: string;
   language: string;
-  lineRangeStart: string;
-  lineRangeEnd: string;
+  lineRangeStart: number | null;
+  lineRangeEnd: number | null;
   totalLines: number;
   validationError?: string;
   onTitleChange: (value: string) => void;
   onNotesChange: (value: string) => void;
   onLanguageChange: (value: string) => void;
-  onLineRangeStartChange: (value: string) => void;
-  onLineRangeEndChange: (value: string) => void;
+  onLineRangeStartChange: (value: number | null) => void;
+  onLineRangeEndChange: (value: number | null) => void;
 }
 
 export function StepEditorFormFields({
@@ -110,10 +110,15 @@ export function StepEditorFormFields({
                 type="number"
                 min="1"
                 max={totalLines || undefined}
-                value={lineRangeStart}
-                onChange={(e) => onLineRangeStartChange(e.target.value)}
-                placeholder="1"
-                className="h-8 text-sm w-16"
+                value={lineRangeStart ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onLineRangeStartChange(
+                    value === "" ? null : parseInt(value, 10)
+                  );
+                }}
+                placeholder="Start"
+                className="h-8 text-sm w-20"
               />
               <span className="text-xs text-muted-foreground px-0.5">-</span>
               <Input
@@ -121,10 +126,15 @@ export function StepEditorFormFields({
                 type="number"
                 min="1"
                 max={totalLines || undefined}
-                value={lineRangeEnd}
-                onChange={(e) => onLineRangeEndChange(e.target.value)}
-                placeholder={totalLines > 0 ? totalLines.toString() : "1"}
-                className="h-8 text-sm w-16"
+                value={lineRangeEnd ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  onLineRangeEndChange(
+                    value === "" ? null : parseInt(value, 10)
+                  );
+                }}
+                placeholder="End"
+                className="h-8 text-sm w-20"
               />
             </div>
             {validationError && (

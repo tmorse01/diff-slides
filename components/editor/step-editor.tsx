@@ -75,6 +75,16 @@ export function StepEditor({
         return;
       }
 
+      // Validate line range if invalid
+      if (!form.isLineRangeValid && form.lineRangeValidationError) {
+        toast({
+          variant: "destructive",
+          title: "Invalid line range",
+          description: form.lineRangeValidationError,
+        });
+        return;
+      }
+
       await onSave(data);
     },
     onDataChange,
