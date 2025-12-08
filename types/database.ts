@@ -79,6 +79,8 @@ export interface Database {
           notes: string | null;
           language: string;
           code: string;
+          line_range_start?: number | null;
+          line_range_end?: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -90,6 +92,8 @@ export interface Database {
           notes?: string | null;
           language?: string;
           code: string;
+          line_range_start?: number | null;
+          line_range_end?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -101,6 +105,8 @@ export interface Database {
           notes?: string | null;
           language?: string;
           code?: string;
+          line_range_start?: number | null;
+          line_range_end?: number | null;
           created_at?: string;
           updated_at?: string;
         };

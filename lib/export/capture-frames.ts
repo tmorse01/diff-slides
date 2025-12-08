@@ -48,34 +48,75 @@ export async function captureAllFrames(
 
       try {
         console.log(
-          `${logPrefix} [Frame ${index + 1}/${steps.length}] Capturing: ${
+          `${logPrefix} [Step ${index + 1}/${steps.length}] Capturing: ${
             step.title || "Untitled"
           }`
         );
 
-        const frameBuffer = await captureStepFrame(step, previousStep, {
+        // Log step details for debugging
+        console.log(
+          `${logPrefix} [Step ${index + 1}] Code length: ${
+            step.code?.length || 0
+          } chars, Language: ${step.language}`
+        );
+
+        // Check browser health
+        try {
+          const pages = await browser.pages();
+          console.log(
+            `${logPrefix} [Step ${index + 1}] Browser has ${
+              pages.length
+            } open page(s)`
+          );
+        } catch (browserError) {
+          console.error(
+            `${logPrefix} [Step ${index + 1}] Browser health check failed:`,
+            browserError
+          );
+          throw new Error(
+            `Browser is not in a valid state: ${
+              browserError instanceof Error
+                ? browserError.message
+                : String(browserError)
+            }`
+          );
+        }
+
+        const frameBuffers = await captureStepFrame(step, previousStep, {
           width: options.width,
           height: options.height,
           browser,
+          currentStepIndex: index,
+          totalSteps: steps.length,
         });
 
-        // Save frame to disk with 0-based index (for ffmpeg compatibility)
-        const framePath = join(tempDir, `${index}.png`);
-        await writeFile(framePath, frameBuffer);
-
-        // Validate frame was actually saved
-        const stats = await stat(framePath);
-        if (stats.size === 0) {
-          throw new Error(`Frame file is empty: ${framePath}`);
+        if (!frameBuffers || frameBuffers.length === 0) {
+          throw new Error("captureStepFrame returned no frames");
         }
 
-        framePaths.push(framePath);
+        // Save each frame to disk with sequential numbering
+        for (
+          let frameIndex = 0;
+          frameIndex < frameBuffers.length;
+          frameIndex++
+        ) {
+          const globalFrameIndex = framePaths.length; // Use current length as global index
+          const framePath = join(tempDir, `${globalFrameIndex}.png`);
+          await writeFile(framePath, frameBuffers[frameIndex]);
+
+          // Validate frame was actually saved
+          const stats = await stat(framePath);
+          if (stats.size === 0) {
+            throw new Error(`Frame file is empty: ${framePath}`);
+          }
+
+          framePaths.push(framePath);
+        }
+
         console.log(
-          `${logPrefix} [Frame ${index + 1}/${
-            steps.length
-          }] ✅ Saved: ${framePath.split(/[/\\]/).pop()} (${(
-            frameBuffer.length / 1024
-          ).toFixed(2)}KB, ${stats.size} bytes) in ${
+          `${logPrefix} [Step ${index + 1}/${steps.length}] ✅ Saved ${
+            frameBuffers.length
+          } frame(s) (total: ${framePaths.length}) in ${
             Date.now() - frameStartTime
           }ms`
         );
@@ -87,14 +128,34 @@ export async function captureAllFrames(
         const elapsed = Date.now() - frameStartTime;
         const stepTitle = step.title || "Untitled";
 
+        // Use console.error to ensure it shows up
         console.error(
-          `${logPrefix} [Frame ${index + 1}/${
+          `${logPrefix} [Step ${index + 1}/${
             steps.length
           }] ❌ FAILED after ${elapsed}ms (Step: "${stepTitle}"): ${errorMessage}`
         );
 
+        // Log full error stack for debugging
+        if (error instanceof Error) {
+          console.error(
+            `${logPrefix} [Step ${index + 1}] Error name: ${error.name}`
+          );
+          if (error.stack) {
+            console.error(
+              `${logPrefix} [Step ${index + 1}] Error stack:`,
+              error.stack
+            );
+          }
+          if (error.cause) {
+            console.error(
+              `${logPrefix} [Step ${index + 1}] Error cause:`,
+              error.cause
+            );
+          }
+        }
+
         errors.push({ index, error: errorMessage });
-        // Continue to next frame instead of throwing
+        // Continue to next step instead of throwing
       }
     }
   } finally {

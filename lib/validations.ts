@@ -23,6 +23,8 @@ export const stepSchema = z.object({
   language: z.string().min(1, "Language is required").default("typescript"),
   code: z.string().min(1, "Code is required"),
   index: z.number().int().min(0),
+  line_range_start: z.number().int().min(1).nullable().optional(),
+  line_range_end: z.number().int().min(1).nullable().optional(),
 });
 
 // For creating steps, allow empty code (user can fill it in later)
