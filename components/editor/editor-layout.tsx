@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { StepsSidebar } from "./steps-sidebar";
 import { StepEditor } from "./step-editor";
 import { ActionsPanel } from "./actions-panel";
@@ -15,6 +17,11 @@ interface EditorLayoutProps {
 
 export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
   const isTemporaryProject = project.session_id && !project.user_id;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Get initial step ID from URL
+  const stepIdFromUrl = searchParams.get("step");
 
   const {
     steps,
@@ -33,7 +40,46 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
   } = useStepEditor({
     initialSteps,
     projectId: project.id,
+    initialStepId: stepIdFromUrl,
   });
+
+  // Sync URL when step changes (one-way: state -> URL)
+  useEffect(() => {
+    const currentStepId = searchParams.get("step");
+    
+    if (selectedStepId) {
+      // Update URL if step changed
+      if (currentStepId !== selectedStepId) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("step", selectedStepId);
+        router.replace(`?${params.toString()}`, { scroll: false });
+      }
+    } else if (currentStepId) {
+      // Clear step from URL if no step is selected
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("step");
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
+  }, [selectedStepId, router, searchParams]);
+
+  // Sync selected step when URL changes externally (e.g., browser back/forward)
+  useEffect(() => {
+    const stepIdFromUrl = searchParams.get("step");
+    
+    // Only sync if URL step differs from current selection
+    if (stepIdFromUrl && stepIdFromUrl !== selectedStepId) {
+      // Verify the step exists before selecting it
+      const stepExists = steps.some((s) => s.id === stepIdFromUrl);
+      if (stepExists) {
+        selectStep(stepIdFromUrl);
+      } else {
+        // Step doesn't exist, clear from URL
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("step");
+        router.replace(`?${params.toString()}`, { scroll: false });
+      }
+    }
+  }, [searchParams, selectedStepId, steps, selectStep, router]);
 
   // Manage diff settings with hook
   const { settings: diffSettings, updateSettings: updateDiffSettings } =

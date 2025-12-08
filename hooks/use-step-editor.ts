@@ -17,17 +17,32 @@ interface StepData {
 interface UseStepEditorOptions {
   initialSteps: Step[];
   projectId: string;
+  initialStepId?: string | null;
   onStepUpdate?: (step: Step) => void;
 }
 
 export function useStepEditor({
   initialSteps,
   projectId,
+  initialStepId,
   onStepUpdate,
 }: UseStepEditorOptions) {
   const [steps, setSteps] = useState<Step[]>(initialSteps);
+  
+  // Determine initial selected step ID: prefer URL param, then first step, then null
+  const getInitialStepId = () => {
+    if (initialStepId) {
+      // Verify the step exists in initialSteps
+      const stepExists = initialSteps.some((s) => s.id === initialStepId);
+      if (stepExists) {
+        return initialStepId;
+      }
+    }
+    return initialSteps.length > 0 ? initialSteps[0].id : null;
+  };
+  
   const [selectedStepId, setSelectedStepId] = useState<string | null>(
-    initialSteps.length > 0 ? initialSteps[0].id : null
+    getInitialStepId()
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isReordering, setIsReordering] = useState(false);

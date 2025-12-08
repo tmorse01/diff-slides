@@ -179,29 +179,30 @@ export function DiffView({
             });
 
           return (
-            <>
+            <div
+              className="flex flex-1 overflow-auto"
+              style={{ overflow: "auto", flex: 1 }}
+            >
               {/* Line numbers gutter */}
               {settings.showLineNumbers && (
-                <div className="absolute left-0 top-0 bottom-0 w-12 bg-muted/30 border-r border-border z-10 flex flex-col pointer-events-none">
+                <div className="w-12 bg-muted/30 border-r border-border flex flex-col shrink-0 pointer-events-none">
+                  <div className="p-6 pb-0" />
                   {filteredLines.map((line, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-end px-2 py-0 text-xs text-muted-foreground font-mono"
-                      style={{ minHeight: "1.5rem", lineHeight: "1.5rem" }}
+                      className="flex items-center justify-end px-2 py-1 text-xs text-muted-foreground font-mono"
                     >
                       {line.diffLine.lineNumber !== undefined
                         ? line.diffLine.lineNumber
                         : " "}
                     </div>
                   ))}
+                  <div className="p-6 pt-0" />
                 </div>
               )}
 
               {/* Code content */}
-              <div
-                className={settings.showLineNumbers ? "pl-12" : ""}
-                style={{ overflow: "auto", flex: 1 }}
-              >
+              <div className="flex-1 min-w-0">
                 <pre className="font-mono text-sm m-0 p-6">
                   <code className="block">
                     {filteredLines.map((line, index) => {
@@ -239,7 +240,7 @@ export function DiffView({
                   </code>
                 </pre>
               </div>
-            </>
+            </div>
           );
         })()}
       </div>
