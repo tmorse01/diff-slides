@@ -4,7 +4,8 @@
  */
 import { computeDiff } from "@/lib/diff";
 import { codeToHtml } from "shiki";
-import type { Browser } from "puppeteer";
+import type { Browser } from "puppeteer-core";
+import { getPuppeteerLaunchOptions } from "./puppeteer-config";
 
 interface ServerDiffViewProps {
   previousCode: string;
@@ -227,7 +228,7 @@ export async function renderDiffViewToImage(
       </div>
       <div class="code-content">
         ${highlightedLines
-          .map((line, index) => {
+          .map((line) => {
             const className =
               line.type === "added"
                 ? "code-line line-added"
@@ -246,18 +247,12 @@ export async function renderDiffViewToImage(
 
   // Use puppeteer directly to render HTML and take screenshot
   // Much simpler than navigating to pages - just set content
-  const puppeteer = await import("puppeteer");
+  const { getPuppeteerInstance } = await import("./puppeteer-config");
+  const puppeteer = await getPuppeteerInstance();
   const shouldCloseBrowser = !props.browser;
+  const launchOptions = await getPuppeteerLaunchOptions();
   const browser =
-    props.browser ||
-    (await puppeteer.default.launch({
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-      ],
-    }));
+    props.browser || (await puppeteer.default.launch(launchOptions));
 
   try {
     const page = await browser.newPage();

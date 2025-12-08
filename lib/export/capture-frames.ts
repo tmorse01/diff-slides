@@ -3,7 +3,11 @@ import { join } from "path";
 import type { Step } from "@/types/database";
 import type { VideoExportOptions } from "./types";
 import { captureStepFrame } from "./frame-capture";
-import puppeteer, { type Browser } from "puppeteer";
+import type { Browser } from "puppeteer-core";
+import {
+  getPuppeteerLaunchOptions,
+  getPuppeteerInstance,
+} from "./puppeteer-config";
 
 /**
  * Capture all frames for a project using server-side rendering
@@ -28,14 +32,9 @@ export async function captureAllFrames(
 
   // Launch a single browser instance to reuse across all frames
   console.log(`${logPrefix} Launching browser...`);
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
-  });
+  const puppeteer = await getPuppeteerInstance();
+  const launchOptions = await getPuppeteerLaunchOptions();
+  const browser = await puppeteer.default.launch(launchOptions);
 
   const framePaths: string[] = [];
   const errors: Array<{ index: number; error: string }> = [];

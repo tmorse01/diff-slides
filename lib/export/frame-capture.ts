@@ -1,5 +1,5 @@
 import type { Step } from "@/types/database";
-import type { Browser } from "puppeteer";
+import type { Browser } from "puppeteer-core";
 import { renderDiffViewToImage } from "./server-diff-view-simple";
 
 /**
