@@ -29,6 +29,8 @@ interface StepEditorProps {
     notes: string | null;
     language: string;
     code: string;
+    line_range_start?: number | null;
+    line_range_end?: number | null;
   }) => Promise<void>;
   onDataChange?: (
     data: {
@@ -67,6 +69,8 @@ export function StepEditor({
   const [language, setLanguage] = useState("typescript");
   const [code, setCode] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lineRangeStart, setLineRangeStart] = useState<string>("");
+  const [lineRangeEnd, setLineRangeEnd] = useState<string>("");
   const lastSavedDataRef = useRef<string>("");
   // Track which step ID the form state is currently displaying
   const currentFormStepIdRef = useRef<string | null>(null);
@@ -84,6 +88,8 @@ export function StepEditor({
       notes: notes.trim() || null,
       language: language || step?.language || "typescript",
       code: safeCode,
+      line_range_start: undefined as number | null | undefined,
+      line_range_end: undefined as number | null | undefined,
     };
   }, [title, notes, language, code, step]);
 
@@ -114,6 +120,20 @@ export function StepEditor({
         setLanguage(step.language || "typescript");
         setCode(step.code || "");
 
+        // Update line range inputs from step
+        if (
+          step.line_range_start !== undefined &&
+          step.line_range_start !== null &&
+          step.line_range_end !== undefined &&
+          step.line_range_end !== null
+        ) {
+          setLineRangeStart(step.line_range_start.toString());
+          setLineRangeEnd(step.line_range_end.toString());
+        } else {
+          setLineRangeStart("");
+          setLineRangeEnd("");
+        }
+
         // Update last saved data when step changes
         lastSavedDataRef.current = JSON.stringify({
           title: step.title || "",
@@ -137,6 +157,8 @@ export function StepEditor({
         setNotes("");
         setLanguage("typescript");
         setCode("");
+        setLineRangeStart("");
+        setLineRangeEnd("");
         lastSavedDataRef.current = "";
         currentFormStepIdRef.current = null;
         isUpdatingFormStateRef.current = false;
@@ -186,10 +208,10 @@ export function StepEditor({
       return;
     }
 
-    const data = getCurrentData();
+    const baseData = getCurrentData();
 
     // Validate before saving
-    if (!data.title.trim()) {
+    if (!baseData.title.trim()) {
       toast({
         variant: "destructive",
         title: "Title required",
@@ -198,7 +220,7 @@ export function StepEditor({
       return;
     }
 
-    if (!data.code.trim()) {
+    if (!baseData.code.trim()) {
       toast({
         variant: "destructive",
         title: "Code required",
@@ -207,14 +229,53 @@ export function StepEditor({
       return;
     }
 
+    // Add line range to data before saving
+    const start = parseInt(lineRangeStart, 10);
+    const end = parseInt(lineRangeEnd, 10);
+    const totalLines = baseData.code.split("\n").length;
+
+    // Build complete data object with line ranges
+    const data: {
+      title: string;
+      notes: string | null;
+      language: string;
+      code: string;
+      line_range_start?: number | null;
+      line_range_end?: number | null;
+    } = {
+      ...baseData,
+    };
+
+    // Validate and set line range
+    if (
+      !isNaN(start) &&
+      !isNaN(end) &&
+      start >= 1 &&
+      end >= 1 &&
+      start <= end &&
+      end <= totalLines
+    ) {
+      data.line_range_start = start;
+      data.line_range_end = end;
+    } else if (!lineRangeStart && !lineRangeEnd) {
+      // Clear line range if inputs are empty
+      data.line_range_start = null;
+      data.line_range_end = null;
+    } else {
+      // Invalid range - keep existing values
+      data.line_range_start = step.line_range_start ?? null;
+      data.line_range_end = step.line_range_end ?? null;
+    }
+
     try {
+      // Save step data (including line ranges)
       await onSave(data);
       lastSavedDataRef.current = JSON.stringify(data);
       setHasUnsavedChanges(false);
     } catch {
       // Error is already handled by onSave
     }
-  }, [step, getCurrentData, onSave]);
+  }, [step, getCurrentData, onSave, lineRangeStart, lineRangeEnd]);
 
   // Keyboard shortcut: Ctrl+S (or Cmd+S on Mac) to save
   useEffect(() => {
@@ -261,42 +322,44 @@ export function StepEditor({
   const additions = diff?.addedCount || 0;
   const deletions = diff?.removedCount || 0;
 
+  // Calculate total lines in current code
+  const totalLines = code.split("\n").length;
+
   return (
     <div className="flex-1 flex flex-col bg-background">
       {/* Editor header */}
-      <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-destructive" />
-            <div className="w-3 h-3 rounded-full bg-warning" />
-            <div className="w-3 h-3 rounded-full bg-primary" />
+      <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-destructive" />
+            <div className="w-2.5 h-2.5 rounded-full bg-warning" />
+            <div className="w-2.5 h-2.5 rounded-full bg-primary" />
           </div>
-          <span className="text-sm font-mono text-foreground">
+          <span className="text-xs font-mono text-foreground">
             {step ? `${step.title}.${step.language}` : "Untitled"}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           {hasUnsavedChanges && (
-            <span className="text-xs text-muted-foreground">
-              Unsaved changes
-            </span>
+            <span className="text-xs text-muted-foreground">Unsaved</span>
           )}
           <Button
             variant="ghost"
             size="sm"
             onClick={handleSave}
             disabled={isSaving}
+            className="h-7 text-xs"
           >
-            {isSaving ? "Saving..." : "Save Changes"}
+            {isSaving ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>
 
       {/* Step info bar */}
       {step && (
-        <div className="bg-secondary/30 border-b border-border px-6 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="bg-secondary/30 border-b border-border px-4 py-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-foreground">
               Step {step.index + 1}: {step.title}
             </span>
@@ -304,14 +367,14 @@ export function StepEditor({
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {additions > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-primary" />
-                    {additions} {additions === 1 ? "addition" : "additions"}
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    {additions} {additions === 1 ? "add" : "adds"}
                   </span>
                 )}
                 {deletions > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-destructive" />
-                    {deletions} {deletions === 1 ? "deletion" : "deletions"}
+                    <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                    {deletions} {deletions === 1 ? "del" : "dels"}
                   </span>
                 )}
               </div>
@@ -320,41 +383,80 @@ export function StepEditor({
         </div>
       )}
 
-      <div className="flex-1 flex flex-col p-4 space-y-4 overflow-hidden">
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="title">Title</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Step title"
-            />
+      <div className="flex-1 flex flex-col p-4 space-y-3 overflow-hidden">
+        <div className="space-y-3">
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <Label htmlFor="title" className="text-xs">
+                Title
+              </Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Step title"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="w-32">
+              <Label htmlFor="language" className="text-xs">
+                Language
+              </Label>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger id="language" className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map((lang) => (
+                    <SelectItem key={lang} value={lang}>
+                      {lang}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* Line Range for Export */}
+            <div className="w-40">
+              <Label htmlFor="line-range" className="text-xs">
+                Line Range (Optional)
+              </Label>
+              <div className="flex items-center gap-1 mt-0.5">
+                <Input
+                  id="line-range-start"
+                  type="number"
+                  min="1"
+                  max={totalLines || undefined}
+                  value={lineRangeStart}
+                  onChange={(e) => setLineRangeStart(e.target.value)}
+                  placeholder="1"
+                  className="h-8 text-sm w-16"
+                />
+                <span className="text-xs text-muted-foreground px-0.5">-</span>
+                <Input
+                  id="line-range-end"
+                  type="number"
+                  min="1"
+                  max={totalLines || undefined}
+                  value={lineRangeEnd}
+                  onChange={(e) => setLineRangeEnd(e.target.value)}
+                  placeholder={totalLines > 0 ? totalLines.toString() : "1"}
+                  className="h-8 text-sm w-16"
+                />
+              </div>
+            </div>
           </div>
           <div>
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes" className="text-xs">
+              Notes
+            </Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional notes for this step"
-              rows={3}
+              rows={2}
+              className="text-sm"
             />
-          </div>
-          <div>
-            <Label htmlFor="language">Language</Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger id="language">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {languages.map((lang) => (
-                  <SelectItem key={lang} value={lang}>
-                    {lang}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 

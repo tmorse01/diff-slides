@@ -10,6 +10,8 @@ interface StepData {
   notes: string | null;
   language: string;
   code: string;
+  line_range_start?: number | null;
+  line_range_end?: number | null;
 }
 
 interface UseStepEditorOptions {
