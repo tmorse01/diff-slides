@@ -8,6 +8,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 const languages = ["typescript", "javascript", "python", "html", "css", "json"];
 
@@ -75,9 +81,29 @@ export function StepEditorFormFields({
           </div>
           {/* Line Range for Export */}
           <div className="w-40">
-            <Label htmlFor="line-range" className="text-xs">
-              Line Range (Optional)
-            </Label>
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="line-range" className="text-xs">
+                Line Range (Optional)
+              </Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Line range information"
+                  >
+                    <Info className="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">
+                    Specify which lines to show in exported videos. Only the
+                    selected range will be visible, helping you focus on the key
+                    changes you want to highlight.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <div className="flex items-center gap-1 mt-0.5">
               <Input
                 id="line-range-start"

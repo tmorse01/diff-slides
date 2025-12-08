@@ -138,8 +138,22 @@ export function useStepEditorForm({
 
   // Validate the current line range
   const lineRangeValidation = useCallback(() => {
-    if (!lineRangeStartState || !lineRangeEndState) {
+    // If both are empty, that's valid (means no range)
+    if (
+      (!lineRangeStartState || lineRangeStartState.trim() === "") &&
+      (!lineRangeEndState || lineRangeEndState.trim() === "")
+    ) {
       return { valid: true }; // Empty is valid (means no range)
+    }
+
+    // If one is empty but not both, that's invalid (incomplete)
+    if (
+      !lineRangeStartState ||
+      lineRangeStartState.trim() === "" ||
+      !lineRangeEndState ||
+      lineRangeEndState.trim() === ""
+    ) {
+      return { valid: false, error: "Both start and end are required" };
     }
 
     const startNum = parseInt(lineRangeStartState, 10);
@@ -276,18 +290,47 @@ export function useStepEditorForm({
 
     // Get and validate line range
     const range = getLineRange();
-    if (range && isLineRangeValid) {
+    const startIsEmpty =
+      !lineRangeStartState || lineRangeStartState.trim() === "";
+    const endIsEmpty = !lineRangeEndState || lineRangeEndState.trim() === "";
+
+    // Debug logging
+    console.log("[handleSave] Line range state:", {
+      lineRangeStartState,
+      lineRangeEndState,
+      startIsEmpty,
+      endIsEmpty,
+      range,
+      isLineRangeValid,
+      validationError: lineRangeValidationError,
+      totalLines,
+    });
+
+    // Check if we have a complete, valid range
+    if (!startIsEmpty && !endIsEmpty && range && isLineRangeValid) {
+      // Valid range - use the parsed values
       data.line_range_start = range.startLine;
       data.line_range_end = range.endLine;
-    } else if (!lineRangeStartState && !lineRangeEndState) {
-      // Clear line range if inputs are empty
+      console.log("[handleSave] ✅ Setting line range:", {
+        start: range.startLine,
+        end: range.endLine,
+      });
+    } else if (startIsEmpty && endIsEmpty) {
+      // Both empty - clear line range
       data.line_range_start = null;
       data.line_range_end = null;
+      console.log("[handleSave] Clearing line range (both empty)");
     } else {
-      // Invalid range - keep existing values
-      data.line_range_start = step.line_range_start ?? null;
-      data.line_range_end = step.line_range_end ?? null;
+      // Incomplete or invalid - clear the range
+      data.line_range_start = null;
+      data.line_range_end = null;
+      console.log("[handleSave] Clearing line range (incomplete/invalid):", {
+        reason: startIsEmpty || endIsEmpty ? "incomplete" : "validation failed",
+        validationError: lineRangeValidationError,
+      });
     }
+
+    console.log("[handleSave] Final payload:", JSON.stringify(data, null, 2));
 
     try {
       await onSave(data);
@@ -302,8 +345,10 @@ export function useStepEditorForm({
     onSave,
     getLineRange,
     isLineRangeValid,
+    lineRangeValidationError,
     lineRangeStartState,
     lineRangeEndState,
+    totalLines,
   ]);
 
   return {
