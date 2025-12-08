@@ -1,31 +1,7 @@
 import type { Step } from "@/types/database";
 import type { Browser } from "puppeteer-core";
 import { renderDiffViewToImage } from "./server-diff-view-simple";
-
-interface LineRange {
-  startLine: number; // 1-based line number (inclusive)
-  endLine: number; // 1-based line number (inclusive)
-}
-
-/**
- * Extract line range from step
- */
-function getLineRangeFromStep(step: Step): LineRange | undefined {
-  if (
-    step.line_range_start !== undefined &&
-    step.line_range_start !== null &&
-    step.line_range_end !== undefined &&
-    step.line_range_end !== null &&
-    step.line_range_start >= 1 &&
-    step.line_range_end >= step.line_range_start
-  ) {
-    return {
-      startLine: step.line_range_start,
-      endLine: step.line_range_end,
-    };
-  }
-  return undefined;
-}
+import { getLineRangeFromStep } from "@/lib/line-range-helpers";
 
 /**
  * Capture a screenshot of a single step using server-side rendering
