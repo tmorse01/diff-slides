@@ -32,17 +32,39 @@ export async function getPuppeteerLaunchOptions(
       // @sparticuz/chromium comes with its own TypeScript types
       const chromiumModule = await import("@sparticuz/chromium");
       // Handle default export (ESM) or direct export (CommonJS)
-      // The package's own types will be inferred automatically
-      const chromium = chromiumModule.default || chromiumModule;
+      // Use type assertion through unknown to properly access properties
+      // The chromium module exports an object with these properties
+      const chromiumRaw = chromiumModule.default || chromiumModule;
+      const chromium = chromiumRaw as unknown as {
+        executablePath: () => Promise<string>;
+        args: string[];
+        defaultViewport?: {
+          width: number;
+          height: number;
+          deviceScaleFactor?: number;
+        } | null;
+        headless: boolean | "shell";
+      };
 
-      // Set executable path for Chromium
+      // Note: Graphics mode configuration is handled automatically by @sparticuz/chromium
+      // for serverless environments. No manual configuration needed.
+
+      // Set executable path for Chromium - this extracts and returns the path
       const executablePath = await chromium.executablePath();
 
+      // Get chromium args - these are optimized for serverless environments
+      const chromiumArgs = chromium.args || [];
+
+      // Extract viewport and headless settings
+      const defaultViewport = chromium.defaultViewport || undefined;
+      const headlessMode =
+        chromium.headless === "shell" ? true : chromium.headless;
+
       return {
-        args: [...args, ...(chromium.args || [])],
-        defaultViewport: chromium.defaultViewport || undefined,
+        args: [...args, ...chromiumArgs],
+        defaultViewport,
         executablePath,
-        headless: chromium.headless === "shell" ? true : chromium.headless,
+        headless: headlessMode,
       };
     } catch (error) {
       console.error(

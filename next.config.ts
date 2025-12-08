@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Ensure @sparticuz/chromium is included in serverless bundle
+  experimental: {
+    serverComponentsExternalPackages: ["@sparticuz/chromium"],
+  },
 };
 
 export default nextConfig;
