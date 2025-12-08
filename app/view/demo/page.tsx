@@ -303,19 +303,17 @@ function LoginForm() {
 export default async function DemoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ stepIndex?: string }> | { stepIndex?: string };
+  searchParams: Promise<{ step?: string }> | { step?: string };
 }) {
   const resolvedSearchParams =
     searchParams instanceof Promise ? await searchParams : searchParams;
-  const { stepIndex } = resolvedSearchParams;
-
-  const initialStepIndex = stepIndex ? parseInt(stepIndex, 10) : 0;
+  const { step: stepId } = resolvedSearchParams;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <Navbar />
       <div className="flex-1 min-h-0">
-        <Viewer steps={demoSteps} initialStepIndex={initialStepIndex} />
+        <Viewer steps={demoSteps} initialStepId={stepId} />
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser } from "@/lib/auth";
 import { getSessionId } from "@/lib/session";
-import { NotFoundError, UnauthorizedError } from "@/lib/errors";
+import { UnauthorizedError } from "@/lib/errors";
 import { ProjectsService } from "@/lib/services/projects.service";
 import type { Project, Database } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";

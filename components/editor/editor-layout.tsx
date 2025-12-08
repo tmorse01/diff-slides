@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { StepsSidebar } from "./steps-sidebar";
 import { StepEditor } from "./step-editor";
 import { ActionsPanel } from "./actions-panel";
 import { TemporaryProjectBanner } from "@/components/temporary-project-banner";
 import { useStepEditor } from "@/hooks/use-step-editor";
+import { useStepUrlSync } from "@/hooks/use-step-url-sync";
 import { useDiffSettings } from "@/hooks/use-diff-settings";
 import type { Project, Step } from "@/types/database";
 
@@ -17,10 +18,9 @@ interface EditorLayoutProps {
 
 export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
   const isTemporaryProject = project.session_id && !project.user_id;
-  const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Get initial step ID from URL
+  // Get initial step from URL for useStepEditor
   const stepIdFromUrl = searchParams.get("step");
 
   const {
@@ -29,7 +29,7 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
     selectedStep,
     previousStep,
     isSaving,
-    selectStep,
+    selectStep: originalSelectStep,
     saveStep,
     addStep,
     duplicateStep,
@@ -43,43 +43,31 @@ export function EditorLayout({ project, initialSteps }: EditorLayoutProps) {
     initialStepId: stepIdFromUrl,
   });
 
-  // Sync URL when step changes (one-way: state -> URL)
-  useEffect(() => {
-    const currentStepId = searchParams.get("step");
-    
-    if (selectedStepId) {
-      // Update URL if step changed
-      if (currentStepId !== selectedStepId) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("step", selectedStepId);
-        router.replace(`?${params.toString()}`, { scroll: false });
-      }
-    } else if (currentStepId) {
-      // Clear step from URL if no step is selected
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete("step");
-      router.replace(`?${params.toString()}`, { scroll: false });
-    }
-  }, [selectedStepId, router, searchParams]);
+  // URL controls step selection - use steps from useStepEditor (which may have been modified)
+  const { currentStepId, setCurrentStepId } = useStepUrlSync({
+    steps, // Use steps from useStepEditor so hook knows about added/deleted steps
+    urlParamName: "step",
+  });
 
-  // Sync selected step when URL changes externally (e.g., browser back/forward)
+  // Sync hook's currentStepId to useStepEditor when it changes (from URL navigation)
   useEffect(() => {
-    const stepIdFromUrl = searchParams.get("step");
-    
-    // Only sync if URL step differs from current selection
-    if (stepIdFromUrl && stepIdFromUrl !== selectedStepId) {
-      // Verify the step exists before selecting it
-      const stepExists = steps.some((s) => s.id === stepIdFromUrl);
-      if (stepExists) {
-        selectStep(stepIdFromUrl);
-      } else {
-        // Step doesn't exist, clear from URL
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("step");
-        router.replace(`?${params.toString()}`, { scroll: false });
-      }
+    if (currentStepId && currentStepId !== selectedStepId) {
+      originalSelectStep(currentStepId);
     }
-  }, [searchParams, selectedStepId, steps, selectStep, router]);
+  }, [currentStepId, selectedStepId, originalSelectStep]);
+
+  // Sync useStepEditor's selectedStepId to hook when it changes (from add/delete/etc)
+  useEffect(() => {
+    if (selectedStepId && selectedStepId !== currentStepId) {
+      setCurrentStepId(selectedStepId);
+    }
+  }, [selectedStepId, currentStepId, setCurrentStepId]);
+
+  // Wrapper that updates both URL and useStepEditor
+  const selectStep = (stepId: string) => {
+    setCurrentStepId(stepId);
+    originalSelectStep(stepId);
+  };
 
   // Manage diff settings with hook
   const { settings: diffSettings, updateSettings: updateDiffSettings } =

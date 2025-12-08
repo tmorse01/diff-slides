@@ -13,7 +13,7 @@ export async function PATCH(
     const resolvedParams = params instanceof Promise ? await params : params;
     const { stepId } = resolvedParams;
 
-    const { step, project } = await StepsService.getByIdWithProject(stepId);
+    const { project } = await StepsService.getByIdWithProject(stepId);
 
     // Verify access to the project
     await verifyProjectAccess(project.id);

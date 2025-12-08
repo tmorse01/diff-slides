@@ -7,7 +7,7 @@ export const projectSchema = z.object({
     .max(100, "Name must be less than 100 characters"),
   slug: z.string().min(1).max(100),
   description: z.string().max(500).nullable().optional(),
-  visibility: z.enum(["private", "unlisted", "public"]).default("private"),
+  visibility: z.enum(["private", "unlisted", "public"]),
   settings: z.record(z.any(), z.any()).nullable().optional(), // Allow any JSON object for settings
 });
 

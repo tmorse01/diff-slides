@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { signIn } from "@/lib/auth-actions";
-import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
-import { NotFoundError, UnauthorizedError } from "@/lib/errors";
+import { UnauthorizedError } from "@/lib/errors";
 import { ArrowLeft, Edit, Eye, Calendar, FileCode } from "lucide-react";
 import { ProjectVisibilitySelector } from "@/components/project-visibility-selector";
 import { format } from "date-fns";

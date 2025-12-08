@@ -11,7 +11,7 @@ export default async function ViewProjectPage({
   searchParams,
 }: {
   params: Promise<{ projectSlug: string }> | { projectSlug: string };
-  searchParams: Promise<{ stepIndex?: string }> | { stepIndex?: string };
+  searchParams: Promise<{ step?: string }> | { step?: string };
 }) {
   const user = await getUser();
   const sessionId = await getSessionId();
@@ -19,7 +19,7 @@ export default async function ViewProjectPage({
   const resolvedSearchParams =
     searchParams instanceof Promise ? await searchParams : searchParams;
   const { projectSlug } = resolvedParams;
-  const { stepIndex } = resolvedSearchParams;
+  const { step: stepId } = resolvedSearchParams;
 
   // Fetch projects by slug using typed service
   const projects = await ProjectsService.getBySlug(projectSlug);
@@ -59,15 +59,13 @@ export default async function ViewProjectPage({
   // Fetch steps using typed service
   const steps = await StepsService.getByProjectId(project.id);
 
-  const initialStepIndex = stepIndex ? parseInt(stepIndex, 10) : 0;
-
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <Navbar />
       <div className="flex-1 min-h-0">
         <Viewer
           steps={steps}
-          initialStepIndex={initialStepIndex}
+          initialStepId={stepId}
           projectSettings={project.settings}
         />
       </div>

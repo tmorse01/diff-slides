@@ -4,12 +4,7 @@ import type {
   TypedInsertBuilder,
   TypedUpdateBuilder,
 } from "@/lib/supabase/types";
-import type {
-  Database,
-  Project,
-  ProjectInsert,
-  ProjectUpdate,
-} from "@/types/database";
+import type { Project, ProjectInsert, ProjectUpdate } from "@/types/database";
 
 /**
  * Project Service - Strongly typed data access layer for projects

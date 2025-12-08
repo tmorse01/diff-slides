@@ -1,74 +1,58 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DiffView } from "@/components/editor/diff-view";
 import { NotesDrawer } from "./notes-drawer";
 import { extractDiffSettings } from "@/lib/diff-settings";
+import { useStepUrlSync } from "@/hooks/use-step-url-sync";
 import type { Step } from "@/types/database";
 import type { Json } from "@/types/database";
 
 interface ViewerProps {
   steps: Step[];
-  initialStepIndex?: number;
+  initialStepId?: string;
   projectSettings?: Json | null;
 }
 
-export function Viewer({
-  steps,
-  initialStepIndex = 0,
-  projectSettings,
-}: ViewerProps) {
-  const [currentStepIndex, setCurrentStepIndex] = useState(
-    Math.max(0, Math.min(initialStepIndex, steps.length - 1))
-  );
+export function Viewer({ steps, initialStepId, projectSettings }: ViewerProps) {
   const [notesOpen, setNotesOpen] = useState(true); // Default to open on desktop
 
   // Extract diff settings from project settings (read-only in viewer)
   const diffSettings = extractDiffSettings(projectSettings);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const stepParam = params.get("stepIndex");
-    if (stepParam) {
-      const index = parseInt(stepParam, 10);
-      if (!isNaN(index) && index >= 0 && index < steps.length) {
-        // Use a small timeout to avoid cascading renders
-        const timeoutId = setTimeout(() => {
-          setNotesOpen(false);
-          setCurrentStepIndex(index);
-        }, 0);
-        return () => clearTimeout(timeoutId);
-      }
-    }
-  }, [steps.length]);
+  // Use the hook - URL controls step selection
+  const { setCurrentStepId, currentStep, currentStepIndex } = useStepUrlSync({
+    steps,
+    defaultStepId: initialStepId,
+    urlParamName: "step",
+  });
 
-  const currentStep = steps[currentStepIndex];
   const previousStep =
     currentStepIndex > 0 ? steps[currentStepIndex - 1] : null;
 
   const handlePrevious = () => {
     if (currentStepIndex > 0) {
       setNotesOpen(false);
-      setCurrentStepIndex(currentStepIndex - 1);
+      setCurrentStepId(steps[currentStepIndex - 1].id);
     }
   };
 
   const handleNext = () => {
     if (currentStepIndex < steps.length - 1) {
       setNotesOpen(false);
-      setCurrentStepIndex(currentStepIndex + 1);
+      setCurrentStepId(steps[currentStepIndex + 1].id);
     }
   };
 
   const handleStepClick = (index: number) => {
     setNotesOpen(false);
-    setCurrentStepIndex(index);
+    setCurrentStepId(steps[index].id);
   };
 
-  if (steps.length === 0) {
+  if (steps.length === 0 || !currentStep) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-muted-foreground">No steps available</div>

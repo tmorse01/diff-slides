@@ -38,7 +38,7 @@ export default function NewProjectPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const form = useForm<CreateProjectFormData>({
-    resolver: zodResolver(createProjectSchema) as any,
+    resolver: zodResolver(createProjectSchema),
     defaultValues: {
       name: "",
       description: "",

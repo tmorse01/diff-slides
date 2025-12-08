@@ -8,7 +8,6 @@ import type { Database, Step, StepInsert, StepUpdate } from "@/types/database";
 
 // Type helpers
 type StepRow = Database["public"]["Tables"]["steps"]["Row"];
-type StepRows = StepRow[];
 
 /**
  * Steps Service - Strongly typed data access layer for steps
