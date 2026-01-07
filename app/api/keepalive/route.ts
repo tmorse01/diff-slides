@@ -3,16 +3,16 @@ import { Database } from "@/types/database";
 
 /**
  * Keep-alive endpoint for Supabase database connection.
- * 
+ *
  * This endpoint exists to prevent Supabase connections from going cold during periods
  * of inactivity. Many free-tier database services (including Supabase) will pause or
  * terminate inactive connections, which can cause cold starts and increased latency.
- * 
+ *
  * The service role key (SUPABASE_SERVICE_ROLE_KEY) is safe to use here because:
- * 1. This is a server-side API route only - environment variables are never exposed to the client
+ * 1. This is a server-side API route only - environment variables without NEXT_PUBLIC_ prefix are never exposed to the client
  * 2. The endpoint performs a minimal read-only query with no data exposure
  * 3. The keep_alive table has RLS enabled and is only accessible via service role
- * 
+ *
  * The 3-day interval balances:
  * - Frequency: Most free tiers require activity at least weekly to prevent pauses
  * - Cost: Minimal query cost (single row SELECT)
@@ -20,7 +20,7 @@ import { Database } from "@/types/database";
  */
 export async function GET() {
   try {
-    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !serviceRoleKey) {
@@ -61,10 +61,6 @@ export async function GET() {
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
-    return Response.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    return Response.json({ error: errorMessage }, { status: 500 });
   }
 }
-
