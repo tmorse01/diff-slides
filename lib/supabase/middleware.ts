@@ -45,6 +45,7 @@ export async function updateSession(request: NextRequest) {
     "/projects/new", // Create new project
     "/api/projects", // Project API routes (handles auth internally)
     "/api/steps", // Steps API routes (handles auth internally)
+    "/api/keepalive", // Keep-alive endpoint for cron job (no auth required)
   ];
 
   const isAllowedRoute =

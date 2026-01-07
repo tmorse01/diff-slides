@@ -111,6 +111,17 @@ export interface Database {
           updated_at?: string;
         };
       };
+      keep_alive: {
+        Row: {
+          id: number;
+        };
+        Insert: {
+          id: number;
+        };
+        Update: {
+          id?: number;
+        };
+      };
     };
   };
 }
