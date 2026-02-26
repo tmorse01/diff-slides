@@ -1,0 +1,22 @@
+name: Keepalive Supabase
+
+on:
+  schedule:
+    # Every 3 days at 00:00 UTC (1st, 4th, 7th, etc.)
+    - cron: "0 0 */3 * *"
+  workflow_dispatch: # Allow manual trigger from Actions tab
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call keepalive endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" "${{ secrets.KEEPALIVE_URL }}/api/keepalive")
+          code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "Response: $body"
+          if [ "$code" != "200" ]; then
+            echo "::error::Keepalive failed with HTTP $code"
+            exit 1
+          fi
