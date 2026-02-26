@@ -7,6 +7,7 @@ import { DiffView } from "@/components/editor/diff-view";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { RippleGrid } from "@/components/landing/ripple-grid";
 
 export function Hero() {
   const [user, setUser] = useState(false);
@@ -22,8 +23,7 @@ export function Hero() {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background grid pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,oklch(0.22_0_0)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.22_0_0)_1px,transparent_1px)] bg-size-[4rem_4rem] mask-[radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
+      <RippleGrid className="absolute inset-0 mask-[radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
 
       <div className="container relative z-10 px-4 py-32">
         <div className="mx-auto max-w-5xl text-center space-y-8">
